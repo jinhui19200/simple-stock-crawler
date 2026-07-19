@@ -1,0 +1,9 @@
+{
+  "name": "simple-stock-crawler",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "python3 server.py",
+    "dev": "python3 server.py"
+  }
+}
