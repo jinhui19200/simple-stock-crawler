@@ -1,10 +1,12 @@
 const DEFAULT_REFRESH_MS = 5000;
-const DETAIL_REFRESH_MS = 5000;
+const SNAPSHOT_URL = './pingan-bank.json';
+const TARGET_STOCK_CODE = '000001';
 
 const appEl = document.getElementById('app');
 const state = {
   stocks: [],
   stockDetail: null,
+  snapshot: null,
   search: '',
   refreshMs: DEFAULT_REFRESH_MS,
   nextRefreshAt: Date.now() + DEFAULT_REFRESH_MS,
@@ -74,14 +76,27 @@ function formatRangeValue(key, value) {
   return formatMoney(value);
 }
 
-function buildDerivedSeries(points, transform) {
-  return (points || [])
-    .map((point) => {
-      const value = transform(Number(point?.value));
-      if (!point?.date || value == null || Number.isNaN(value)) return null;
-      return { date: point.date, value };
-    })
-    .filter(Boolean);
+function normalizeNumber(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function lastGrossMarginDate(snapshot) {
+  const points = snapshot?.grossMarginHistory || [];
+  return points.length ? points[points.length - 1].date : null;
+}
+
+function estimatePe(livePrice, snapshot) {
+  const latestPrice = normalizeNumber(snapshot?.latestPrice);
+  const latestPe = normalizeNumber(snapshot?.pe);
+  if (!latestPrice || !latestPe) return latestPe;
+  return (Number(livePrice) / latestPrice) * latestPe;
+}
+
+function estimateMarketValue(livePrice, snapshot) {
+  const shareCountEstimate = normalizeNumber(snapshot?.shareCountEstimate);
+  if (!shareCountEstimate) return normalizeNumber(snapshot?.marketValue);
+  return Number(livePrice) * shareCountEstimate;
 }
 
 function normalizePoints(points, width, height, padding) {
@@ -170,10 +185,10 @@ function renderHome() {
           <div>
             <p class="eyebrow">平安银行 · 在线行情</p>
             <h2>股票列表</h2>
-            <p class="subtle">仅展示平安银行，在线数据每 5 秒自动刷新。输入 000001 后按回车可直达详情页。</p>
+            <p class="subtle">成交价每 5 秒刷新；市值和市盈率按最新成交价动态推算；毛利率展示首版内置财报历史。</p>
           </div>
           <div class="status">
-            <span class="badge">在线接口</span>
+            <span class="badge">纯静态模式</span>
             <span class="badge ghost" id="timerBadge">下次刷新：${secondsLeft()}s</span>
           </div>
         </div>
@@ -239,6 +254,16 @@ function renderMetricCard(title, currentValue, note, points, key, axisLabel) {
   `;
 }
 
+function buildDerivedSeries(points, transform) {
+  return (points || [])
+    .map((point) => {
+      const value = transform(Number(point?.value));
+      if (!point?.date || value == null || Number.isNaN(value)) return null;
+      return { date: point.date, value };
+    })
+    .filter(Boolean);
+}
+
 function renderDetail() {
   const stock = state.stockDetail;
   if (!stock) return '';
@@ -259,6 +284,7 @@ function renderDetail() {
           }
           return (price / Number(stock.latestPrice)) * Number(stock.pe);
         });
+
   return `
     <section class="detail-hero">
       <button class="back-link" id="backButton" type="button">← 返回列表</button>
@@ -270,10 +296,10 @@ function renderDetail() {
     </section>
 
     <section class="detail-grid">
-      ${renderMetricCard('成交价', formatPrice(stock.latestPrice), '近五年复权日线收盘价走势', stock.priceHistory || [], 'price', '横轴：交易日期')}
-      ${renderMetricCard('市值', formatMoney(stock.marketValue), '按近五年收盘价和当前总股本推算', marketValueHistory, 'marketValue', '横轴：交易日期')}
-      ${renderMetricCard('毛利率', formatPercent(stock.grossMargin), '按财报披露更新，不会每 5 秒变化', stock.grossMarginHistory || [], 'grossMargin', '横轴：财报日期')}
-      ${renderMetricCard('市盈率', formatPe(stock.pe), '按近五年收盘价与当前动态市盈率估算', peHistory, 'pe', '横轴：交易日期')}
+      ${renderMetricCard('成交价', formatPrice(stock.latestPrice), '实时成交价每 5 秒自动刷新；历史图为近五年收盘价。', stock.priceHistory || [], 'price', '横轴：交易日期')}
+      ${renderMetricCard('市值', formatMoney(stock.marketValue), '按最新成交价与当前总股本估算；历史图按收盘价回推。', marketValueHistory, 'marketValue', '横轴：交易日期')}
+      ${renderMetricCard('毛利率', formatPercent(stock.grossMargin), '首版使用内置财报历史数据；不会每 5 秒波动。', stock.grossMarginHistory || [], 'grossMargin', '横轴：财报日期')}
+      ${renderMetricCard('市盈率', formatPe(stock.pe), '按最新成交价与首版基线市盈率换算；历史图按收盘价回推。', peHistory, 'pe', '横轴：交易日期')}
     </section>
   `;
 }
@@ -299,8 +325,8 @@ function renderError(message) {
 function renderFileModeNotice() {
   return `
     <section class="card notice-card">
-      <h2>请通过本地服务打开</h2>
-      <p class="subtle">当前是 <code>file://</code> 方式，在线接口无法正常读取。请运行 <code>python3 server.py</code>，本机打开 <code>http://127.0.0.1:8000</code>；其他设备请打开终端里显示的局域网地址，例如 <code>http://192.168.1.10:8000</code>。</p>
+      <h2>请通过网页链接或本地服务打开</h2>
+      <p class="subtle">当前是 <code>file://</code> 方式，浏览器通常不会稳定读取同目录静态 JSON。请通过已部署链接访问，或继续使用 <code>http://127.0.0.1:8000</code> 预览。</p>
     </section>
   `;
 }
@@ -316,7 +342,7 @@ function renderApp() {
     return;
   }
   if (state.loading) {
-    appEl.innerHTML = renderLoading(state.routeCode ? '正在读取个股详情...' : '正在读取全 A 股列表...');
+    appEl.innerHTML = renderLoading(state.routeCode ? '正在读取个股详情...' : '正在读取股票列表...');
     return;
   }
   appEl.innerHTML = state.routeCode ? renderDetail() : renderHome();
@@ -393,27 +419,110 @@ function secondsLeft() {
 async function fetchJson(url) {
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
-    let detail = `${response.status} ${response.statusText}`;
-    try {
-      const payload = await response.json();
-      if (payload?.detail) detail = payload.detail;
-    } catch {}
-    throw new Error(detail);
+    throw new Error(`${response.status} ${response.statusText}`);
   }
   return response.json();
 }
 
+async function ensureSnapshot() {
+  if (state.snapshot) return state.snapshot;
+  state.snapshot = await fetchJson(SNAPSHOT_URL);
+  return state.snapshot;
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => {
+      script.remove();
+      resolve();
+    };
+    script.onerror = () => {
+      script.remove();
+      reject(new Error('实时行情脚本加载失败'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+async function fetchTencentQuote(code) {
+  const marketPrefix = String(code).startsWith('6') ? 'sh' : 'sz';
+  const variableName = `v_${marketPrefix}${code}`;
+  try {
+    delete window[variableName];
+  } catch {}
+
+  const separator = `refresh=${Date.now()}`;
+  const scriptUrl = `https://qt.gtimg.cn/q=${marketPrefix}${code}&${separator}`;
+  await loadScript(scriptUrl);
+
+  const rawQuote = window[variableName];
+  if (typeof rawQuote !== 'string' || !rawQuote) {
+    throw new Error('行情接口返回格式异常');
+  }
+
+  const fields = rawQuote.split('~');
+  const latestPrice = normalizeNumber(fields[3]);
+  if (latestPrice == null) {
+    throw new Error('未读取到最新成交价');
+  }
+
+  return {
+    code,
+    name: fields[1] || '平安银行',
+    latestPrice,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function buildLiveStock(snapshot, quote) {
+  const latestPrice = normalizeNumber(quote?.latestPrice) ?? normalizeNumber(snapshot.latestPrice);
+  const fallbackUpdatedAt = new Date().toISOString();
+  return {
+    code: snapshot.code,
+    name: quote?.name || snapshot.name,
+    latestPrice,
+    marketValue: estimateMarketValue(latestPrice, snapshot),
+    grossMargin: normalizeNumber(snapshot.grossMargin),
+    grossMarginUpdatedAt: snapshot.grossMarginUpdatedAt || lastGrossMarginDate(snapshot),
+    pe: estimatePe(latestPrice, snapshot),
+    shareCountEstimate: normalizeNumber(snapshot.shareCountEstimate),
+    updatedAt: quote?.updatedAt || fallbackUpdatedAt,
+    source: '腾讯实时行情 + 首版内置历史数据',
+    refreshIntervalSeconds: DEFAULT_REFRESH_MS / 1000,
+    priceHistory: snapshot.priceHistory || [],
+    grossMarginHistory: snapshot.grossMarginHistory || []
+  };
+}
+
+async function buildSnapshotBackedStock() {
+  const snapshot = await ensureSnapshot();
+  try {
+    const quote = await fetchTencentQuote(snapshot.code || TARGET_STOCK_CODE);
+    return buildLiveStock(snapshot, quote);
+  } catch (error) {
+    const fallbackStock = buildLiveStock(snapshot, null);
+    fallbackStock.updatedAt = new Date().toISOString();
+    return fallbackStock;
+  }
+}
+
 async function refreshMarket() {
-  const payload = await fetchJson('/api/market');
-  state.stocks = payload.stocks || [];
-  state.refreshMs = (payload.refreshIntervalSeconds || 5) * 1000;
+  const stock = await buildSnapshotBackedStock();
+  state.stocks = [stock];
+  state.refreshMs = DEFAULT_REFRESH_MS;
   state.nextRefreshAt = Date.now() + state.refreshMs;
 }
 
 async function refreshStockDetail(code) {
-  const payload = await fetchJson(`/api/stock?code=${encodeURIComponent(code)}`);
-  state.stockDetail = payload;
-  state.refreshMs = (payload.refreshIntervalSeconds || DETAIL_REFRESH_MS / 1000) * 1000;
+  const stock = await buildSnapshotBackedStock();
+  if (stock.code !== code) {
+    throw new Error('暂未找到该股票');
+  }
+  state.stockDetail = stock;
+  state.refreshMs = DEFAULT_REFRESH_MS;
   state.nextRefreshAt = Date.now() + state.refreshMs;
 }
 
