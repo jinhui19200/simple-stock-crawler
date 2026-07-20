@@ -1,23 +1,41 @@
-const DEFAULT_REFRESH_MS = 5000;
-const SNAPSHOT_URL = './pingan-bank.json';
+const DEFAULT_REFRESH_MS = 60 * 1000;
+const SNAPSHOT_URLS = ['./pingan-bank.json', './data/pingan-bank.json'];
 const TARGET_STOCK_CODE = '000001';
+const MARKET_TIMEZONE = 'Asia/Shanghai';
+const INDUSTRY_INDEX_CODE = '399986';
+const INDUSTRY_INDEX_MARKET = 'sz';
+const INDUSTRY_HISTORY_LIMIT = 1300;
+const SIDEBAR_ITEMS = [
+  { page: 'list', label: '股票列表' },
+  { page: 'detail', label: '股票详情' },
+  { page: 'analysis', label: '分析' }
+];
 
 const appEl = document.getElementById('app');
 const state = {
   stocks: [],
   stockDetail: null,
   snapshot: null,
+  industryPeHistory: null,
+  industryPeHistoryFetchedAt: 0,
+  showDiscountThreshold: true,
   search: '',
   refreshMs: DEFAULT_REFRESH_MS,
-  nextRefreshAt: Date.now() + DEFAULT_REFRESH_MS,
+  nextRefreshAt: null,
   loading: true,
   isRefreshing: false,
   error: '',
-  routeCode: getRouteCode()
+  route: getRoute()
 };
 
-function getRouteCode() {
-  return new URL(location.href).searchParams.get('stock');
+function getRoute() {
+  const params = new URL(location.href).searchParams;
+  const page = params.get('page');
+  const stock = params.get('stock');
+  if (page === 'detail') return { page: 'detail', code: stock || TARGET_STOCK_CODE };
+  if (page === 'analysis') return { page: 'analysis', code: stock || TARGET_STOCK_CODE };
+  if (stock) return { page: 'detail', code: stock };
+  return { page: 'list', code: null };
 }
 
 function isFileMode() {
@@ -62,6 +80,7 @@ function formatTime(value) {
 
 function formatAxisDate(value) {
   if (!value) return '--';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return String(value);
   const date = new Date(value);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -76,6 +95,13 @@ function formatRangeValue(key, value) {
   return formatMoney(value);
 }
 
+function formatSignedNumber(value) {
+  if (value == null || Number.isNaN(Number(value))) return '--';
+  const numeric = Number(value);
+  const prefix = numeric > 0 ? '+' : numeric < 0 ? '-' : '';
+  return `${prefix}${Math.abs(numeric).toFixed(2)}`;
+}
+
 function normalizeNumber(value) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
@@ -86,41 +112,94 @@ function lastGrossMarginDate(snapshot) {
   return points.length ? points[points.length - 1].date : null;
 }
 
-function estimatePe(livePrice, snapshot) {
-  const latestPrice = normalizeNumber(snapshot?.latestPrice);
-  const latestPe = normalizeNumber(snapshot?.pe);
-  if (!latestPrice || !latestPe) return latestPe;
-  return (Number(livePrice) / latestPrice) * latestPe;
+function estimatePe(latestPrice, snapshot) {
+  const basePrice = normalizeNumber(snapshot?.latestPrice);
+  const basePe = normalizeNumber(snapshot?.pe);
+  if (!basePrice || !basePe) return basePe;
+  return (Number(latestPrice) / basePrice) * basePe;
 }
 
-function estimateMarketValue(livePrice, snapshot) {
+function estimateMarketValue(latestPrice, snapshot) {
   const shareCountEstimate = normalizeNumber(snapshot?.shareCountEstimate);
   if (!shareCountEstimate) return normalizeNumber(snapshot?.marketValue);
-  return Number(livePrice) * shareCountEstimate;
+  return Number(latestPrice) * shareCountEstimate;
 }
 
-function normalizePoints(points, width, height, padding) {
+function normalizePoints(points, width, height, padding, comparePoints = [], thresholdPoints = []) {
   const valid = points.filter((point) => point && point.value != null && !Number.isNaN(Number(point.value)));
-  if (!valid.length) return [];
-  const values = valid.map((point) => Number(point.value));
+  if (!valid.length) return { points: [], min: null, max: null };
+  const compareMap = new Map(
+    (comparePoints || [])
+      .filter((point) => point?.date && point.value != null && !Number.isNaN(Number(point.value)))
+      .map((point) => [point.date, Number(point.value)])
+  );
+  const thresholdMap = new Map(
+    (thresholdPoints || [])
+      .filter((point) => point?.date && point.value != null && !Number.isNaN(Number(point.value)))
+      .map((point) => [point.date, Number(point.value)])
+  );
+  const values = valid.flatMap((point) => {
+    const merged = [Number(point.value)];
+    const compareValue = compareMap.get(point.date);
+    if (compareValue != null) merged.push(compareValue);
+    const thresholdValue = thresholdMap.get(point.date);
+    if (thresholdValue != null) merged.push(thresholdValue);
+    return merged;
+  });
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
   const plotWidth = width - padding * 2;
   const plotHeight = height - padding * 2;
-  return valid.map((point, index) => {
+  const normalized = valid.map((point, index) => {
     const ratio = valid.length === 1 ? 0.5 : index / (valid.length - 1);
+    const compareValue = compareMap.get(point.date);
+    const thresholdValue = thresholdMap.get(point.date);
+    const compareY =
+      compareValue == null ? null : padding + plotHeight - ((compareValue - min) / range) * plotHeight;
+    const thresholdY =
+      thresholdValue == null ? null : padding + plotHeight - ((thresholdValue - min) / range) * plotHeight;
     return {
       ...point,
       value: Number(point.value),
+      compareValue,
+      thresholdValue,
       x: padding + plotWidth * ratio,
-      y: padding + plotHeight - ((Number(point.value) - min) / range) * plotHeight
+      y: padding + plotHeight - ((Number(point.value) - min) / range) * plotHeight,
+      compareY,
+      thresholdY
     };
   });
+  return { points: normalized, min, max };
 }
 
-function pointsToPath(points) {
-  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+function pointsToPath(points, yKey = 'y') {
+  return points
+    .filter((point) => point[yKey] != null)
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point[yKey]}`)
+    .join(' ');
+}
+
+function pointsToConditionalPaths(points, predicate, yKey = 'y') {
+  const paths = [];
+  let current = [];
+
+  points.forEach((point) => {
+    if (predicate(point)) {
+      current.push(point);
+      return;
+    }
+    if (current.length > 1) {
+      paths.push(pointsToPath(current, yKey));
+    }
+    current = [];
+  });
+
+  if (current.length > 1) {
+    paths.push(pointsToPath(current, yKey));
+  }
+
+  return paths;
 }
 
 function pointsToArea(points, height, padding) {
@@ -132,36 +211,136 @@ function pointsToArea(points, height, padding) {
   return `M ${first.x} ${baseline} L ${first.x} ${first.y} ${middle} L ${last.x} ${baseline} Z`;
 }
 
-function renderChart(points, key, axisLabel) {
-  const width = 320;
-  const height = 150;
+function buildDefaultTooltipHtml(point, label, key) {
+  return `
+    <div class="chart-tooltip__stack">
+      <div class="chart-tooltip__title">${escapeHtml(label)}</div>
+      <div class="chart-tooltip__row">${escapeHtml(formatAxisDate(point.date))}</div>
+      <div class="chart-tooltip__row">${escapeHtml(formatRangeValue(key, point.value))}</div>
+    </div>
+  `;
+}
+
+function buildPeCompareTooltipHtml(point, compareLabel) {
+  if (point.compareValue == null) {
+    return `
+      <div class="chart-tooltip__stack">
+        <div class="chart-tooltip__row">平安银行市盈率：${escapeHtml(formatPe(point.value))}</div>
+        <div class="chart-tooltip__row">${escapeHtml(compareLabel)}：--</div>
+        <div class="chart-tooltip__row">差值：--</div>
+      </div>
+    `;
+  }
+  return `
+    <div class="chart-tooltip__stack">
+      <div class="chart-tooltip__row">平安银行市盈率：${escapeHtml(formatPe(point.value))}</div>
+      <div class="chart-tooltip__row">${escapeHtml(compareLabel)}：${escapeHtml(formatPe(point.compareValue))}</div>
+      <div class="chart-tooltip__row">差值：${escapeHtml(formatSignedNumber(point.value - point.compareValue))}</div>
+    </div>
+  `;
+}
+
+function renderChart(points, key, axisLabel, options = {}) {
+  const width = options.width || 320;
+  const height = options.height || 150;
   const padding = 18;
-  const normalized = normalizePoints(points, width, height, padding);
+  const comparePoints = options.comparePoints || [];
+  const thresholdPoints = options.thresholdPoints || [];
+  const compareLabel = options.compareLabel || '行业市盈率';
+  const normalizedResult = normalizePoints(points, width, height, padding, comparePoints, thresholdPoints);
+  const normalized = normalizedResult.points;
   if (!normalized.length) {
     return '<div class="empty-chart">暂无历史数据</div>';
   }
-  const values = normalized.map((point) => point.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const min = normalizedResult.min;
+  const max = normalizedResult.max;
   const tickIndexes = [0, 0.25, 0.5, 0.75, 1]
     .map((fraction) => Math.round((normalized.length - 1) * fraction))
     .filter((index, position, array) => array.indexOf(index) === position);
+  const interactive = Boolean(options.interactive);
+  const label = options.label || key;
+  const hasCompare = normalized.some((point) => point.compareY != null);
+  const hasThreshold = normalized.some((point) => point.thresholdY != null);
+  const highlightBelowThreshold = Boolean(options.highlightBelowThreshold);
+  const alertPaths =
+    hasThreshold && highlightBelowThreshold
+      ? pointsToConditionalPaths(normalized, (point) => point.thresholdValue != null && point.value < point.thresholdValue)
+      : [];
+  const tooltip = interactive
+    ? '<div class="chart-tooltip" aria-hidden="true"></div>'
+    : '';
 
   return `
-    <svg class="metric-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(key)} 历史走势图">
-      <defs>
-        <linearGradient id="gradient-${key}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#2f6fed" stop-opacity="0.28"></stop>
-          <stop offset="100%" stop-color="#2f6fed" stop-opacity="0"></stop>
-        </linearGradient>
-      </defs>
-      <path class="metric-chart__area" d="${pointsToArea(normalized, height, padding)}" fill="url(#gradient-${key})"></path>
-      <path class="metric-chart__line" d="${pointsToPath(normalized)}" fill="none"></path>
-      ${tickIndexes
-        .map((index) => `<circle class="metric-chart__dot" cx="${normalized[index].x}" cy="${normalized[index].y}" r="3.5"></circle>`)
-        .join('')}
-      <line class="metric-chart__baseline" x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}"></line>
-    </svg>
+    <div class="chart-shell${interactive ? ' is-interactive' : ''}" data-chart-shell="${interactive ? key : ''}">
+      ${tooltip}
+      <svg class="metric-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(label)} 历史走势图">
+        <defs>
+          <linearGradient id="gradient-${key}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2f6fed" stop-opacity="0.28"></stop>
+            <stop offset="100%" stop-color="#2f6fed" stop-opacity="0"></stop>
+          </linearGradient>
+        </defs>
+        <path class="metric-chart__area" d="${pointsToArea(normalized, height, padding)}" fill="url(#gradient-${key})"></path>
+        <path class="metric-chart__line" d="${pointsToPath(normalized)}" fill="none"></path>
+        ${alertPaths.map((path) => `<path class="metric-chart__line metric-chart__line--alert" d="${path}" fill="none"></path>`).join('')}
+        ${hasCompare ? `<path class="metric-chart__line metric-chart__line--compare" d="${pointsToPath(normalized, 'compareY')}" fill="none"></path>` : ''}
+        ${tickIndexes
+          .map((index) => `<circle class="metric-chart__dot" cx="${normalized[index].x}" cy="${normalized[index].y}" r="3.5"></circle>`)
+          .join('')}
+        ${
+          interactive
+            ? normalized
+                .map(
+                  (point) => `
+                    <circle
+                      class="metric-chart__hit"
+                      data-tooltip-html="${encodeURIComponent(
+                        options.tooltipMode === 'pe-compare'
+                          ? buildPeCompareTooltipHtml(point, compareLabel)
+                          : buildDefaultTooltipHtml(point, label, key)
+                      )}"
+                      cx="${point.x}"
+                      cy="${point.y}"
+                      r="${Math.max(6, Math.min(12, 500 / normalized.length))}"
+                      tabindex="0"
+                    ></circle>
+                    ${
+                      point.compareY != null
+                        ? `
+                          <circle
+                            class="metric-chart__hit metric-chart__hit--compare"
+                            data-tooltip-html="${encodeURIComponent(
+                              options.tooltipMode === 'pe-compare'
+                                ? buildPeCompareTooltipHtml(point, compareLabel)
+                                : buildDefaultTooltipHtml(point, label, key)
+                            )}"
+                            cx="${point.x}"
+                            cy="${point.compareY}"
+                            r="${Math.max(6, Math.min(12, 500 / normalized.length))}"
+                            tabindex="0"
+                          ></circle>
+                        `
+                        : ''
+                    }
+                  `
+                )
+                .join('')
+            : ''
+        }
+        <line class="metric-chart__baseline" x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}"></line>
+      </svg>
+    </div>
+    ${
+      hasCompare
+        ? `
+          <div class="metric-chart__legend">
+            <span class="metric-chart__legend-item"><i class="metric-chart__legend-line"></i>个股市盈率</span>
+            <span class="metric-chart__legend-item"><i class="metric-chart__legend-line metric-chart__legend-line--compare"></i>${escapeHtml(compareLabel)}</span>
+            ${alertPaths.length ? '<span class="metric-chart__legend-item"><i class="metric-chart__legend-line metric-chart__legend-line--alert"></i>低于行业平均20%</span>' : ''}
+          </div>
+        `
+        : ''
+    }
     <div class="metric-chart__axis">
       ${tickIndexes.map((index) => `<span>${formatAxisDate(normalized[index].date)}</span>`).join('')}
     </div>
@@ -173,59 +352,108 @@ function filteredStocks() {
   const query = state.search.trim().toLowerCase();
   const sorted = [...state.stocks].sort((left, right) => String(left.code).localeCompare(String(right.code), 'zh-CN'));
   if (!query) return sorted;
-  return sorted.filter((stock) => `${stock.code} ${stock.name}`.toLowerCase().includes(query));
+  return sorted.filter((stock) => `${stock.code} ${stock.name} ${stock.industry || ''}`.toLowerCase().includes(query));
+}
+
+function getSidebarTarget(page) {
+  if (page === 'list') return null;
+  return state.route.code || state.stockDetail?.code || state.stocks[0]?.code || TARGET_STOCK_CODE;
+}
+
+function renderSidebar() {
+  return `
+    <aside class="sidebar">
+      <nav class="sidebar__nav" aria-label="页面导航">
+        ${SIDEBAR_ITEMS.map((item) => {
+          const targetCode = getSidebarTarget(item.page);
+          const isActive = state.route.page === item.page;
+          return `
+            <button
+              class="sidebar__link${isActive ? ' is-active' : ''}"
+              type="button"
+              data-nav-page="${item.page}"
+              data-nav-code="${targetCode || ''}"
+            >
+              ${item.label}
+            </button>
+          `;
+        }).join('')}
+      </nav>
+    </aside>
+  `;
+}
+
+function renderStatusPill(stock) {
+  if (!stock) return '';
+  return `
+    <div class="status">
+      <span class="badge">${escapeHtml(stock.source || '数据源未标注')}</span>
+      <span class="badge ghost" id="timerBadge">${escapeHtml(getRefreshText(stock))}</span>
+    </div>
+  `;
+}
+
+function getRefreshText(stock) {
+  if (!stock) return '等待数据';
+  if (!stock.shouldAutoRefresh || !state.nextRefreshAt) {
+    return stock.refreshLabel || '当前暂停刷新';
+  }
+  return `下次刷新：${secondsLeft()}s`;
 }
 
 function renderHome() {
   const rows = filteredStocks();
+  const stock = state.stocks[0];
   return `
-    <section class="card list-card">
-      <div class="list-top">
-        <div class="card-head">
-          <div>
-            <p class="eyebrow">平安银行 · 在线行情</p>
-            <h2>股票列表</h2>
-            <p class="subtle">成交价每 5 秒刷新；市值和市盈率按最新成交价动态推算；毛利率展示首版内置财报历史。</p>
-          </div>
-          <div class="status">
-            <span class="badge">纯静态模式</span>
-            <span class="badge ghost" id="timerBadge">下次刷新：${secondsLeft()}s</span>
-          </div>
+    <section class="page">
+      <header class="page__header">
+        <div>
+          <p class="eyebrow">平安银行 · A股银行板块</p>
+          <h2>股票列表</h2>
+          <p class="subtle">交易时段按 1 分钟刷新；午间停牌暂停轮询；收市后自动展示最新收盘数据。</p>
         </div>
-        <label class="search-field">
-          <span>搜索</span>
-          <input id="searchInput" type="search" value="${escapeHtml(state.search)}" placeholder="输入 000001 后按回车跳转" />
-        </label>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>名称</th>
-              <th>代码</th>
-              <th>成交价</th>
-              <th>市值</th>
-              <th>毛利率</th>
-              <th>市盈率</th>
-              <th>更新时间</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">${renderRows(rows)}</tbody>
-        </table>
-      </div>
+        ${renderStatusPill(stock)}
+      </header>
+
+      <section class="card list-card">
+        <div class="list-top">
+          <label class="search-field">
+            <span>搜索</span>
+            <input id="searchInput" type="search" value="${escapeHtml(state.search)}" placeholder="输入 000001 后按回车跳转" />
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>行业</th>
+                <th>代码</th>
+                <th>成交价</th>
+                <th>市值</th>
+                <th>毛利率</th>
+                <th>市盈率</th>
+                <th>更新时间</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">${renderRows(rows)}</tbody>
+          </table>
+        </div>
+      </section>
     </section>
   `;
 }
 
 function renderRows(rows) {
   if (!rows.length) {
-    return '<tr><td colspan="7">暂无匹配结果</td></tr>';
+    return '<tr><td colspan="8">暂无匹配结果</td></tr>';
   }
   return rows
     .map(
       (stock) => `
         <tr class="stock-row" data-code="${stock.code}" tabindex="0">
           <td>${escapeHtml(stock.name)}</td>
+          <td>${escapeHtml(stock.industry || '--')}</td>
           <td>${escapeHtml(stock.code)}</td>
           <td>${formatPrice(stock.latestPrice)}</td>
           <td>${formatMoney(stock.marketValue)}</td>
@@ -238,18 +466,18 @@ function renderRows(rows) {
     .join('');
 }
 
-function renderMetricCard(title, currentValue, note, points, key, axisLabel) {
+function renderMetricCard(title, currentValue, note, points, key, axisLabel, options = {}) {
   return `
-    <article class="card metric-card">
+    <article class="card metric-card${options.className ? ` ${options.className}` : ''}">
       <div class="metric-card__head">
         <div>
           <p class="metric-label">${title}</p>
           <h2>${currentValue}</h2>
         </div>
-        <span class="metric-pill">现在数据</span>
+        <span class="metric-pill">${escapeHtml(options.pill || '现在数据')}</span>
       </div>
       <p class="subtle">${note}</p>
-      ${renderChart(points, key, axisLabel)}
+      ${renderChart(points, key, axisLabel, options.chartOptions)}
     </article>
   `;
 }
@@ -264,9 +492,7 @@ function buildDerivedSeries(points, transform) {
     .filter(Boolean);
 }
 
-function renderDetail() {
-  const stock = state.stockDetail;
-  if (!stock) return '';
+function resolveDetailSeries(stock) {
   const shareCountEstimate = Number(stock.shareCountEstimate);
   const marketValueHistory =
     stock.marketValueHistory && stock.marketValueHistory.length
@@ -285,21 +511,128 @@ function renderDetail() {
           return (price / Number(stock.latestPrice)) * Number(stock.pe);
         });
 
-  return `
-    <section class="detail-hero">
-      <button class="back-link" id="backButton" type="button">← 返回列表</button>
-      <div class="detail-title">
-        <p class="eyebrow">平安银行 · 在线详情</p>
-        <h1>${escapeHtml(stock.name)}</h1>
-        <p class="subtle">${escapeHtml(stock.code)} · 更新时间 ${formatTime(stock.updatedAt)}</p>
-      </div>
-    </section>
+  return { marketValueHistory, peHistory };
+}
 
-    <section class="detail-grid">
-      ${renderMetricCard('成交价', formatPrice(stock.latestPrice), '实时成交价每 5 秒自动刷新；历史图为近五年收盘价。', stock.priceHistory || [], 'price', '横轴：交易日期')}
-      ${renderMetricCard('市值', formatMoney(stock.marketValue), '按最新成交价与当前总股本估算；历史图按收盘价回推。', marketValueHistory, 'marketValue', '横轴：交易日期')}
-      ${renderMetricCard('毛利率', formatPercent(stock.grossMargin), '首版使用内置财报历史数据；不会每 5 秒波动。', stock.grossMarginHistory || [], 'grossMargin', '横轴：财报日期')}
-      ${renderMetricCard('市盈率', formatPe(stock.pe), '按最新成交价与首版基线市盈率换算；历史图按收盘价回推。', peHistory, 'pe', '横轴：交易日期')}
+function resolveIndustryPeHistory(stock) {
+  return (stock.industryPeHistory || [])
+    .filter((point) => point?.date && point.value != null && !Number.isNaN(Number(point.value)))
+    .map((point) => ({ date: point.date, value: Number(point.value) }));
+}
+
+function buildIndustryDiscountThreshold(points, discountRate = 0.2) {
+  return (points || [])
+    .filter((point) => point?.date && point.value != null && !Number.isNaN(Number(point.value)))
+    .map((point) => ({
+      date: point.date,
+      value: Number(point.value) * (1 - discountRate)
+    }));
+}
+
+function renderDetail() {
+  const stock = state.stockDetail;
+  if (!stock) return '';
+  const { marketValueHistory, peHistory } = resolveDetailSeries(stock);
+  const pill = stock.dataPill || '现在数据';
+
+  return `
+    <section class="page">
+      <header class="page__header">
+        <div>
+          <p class="eyebrow">单股详情</p>
+          <h2>股票详情</h2>
+          <p class="subtle">${escapeHtml(stock.name)} ${escapeHtml(stock.code)} · 更新时间 ${formatTime(stock.updatedAt)}</p>
+        </div>
+        ${renderStatusPill(stock)}
+      </header>
+
+      <section class="detail-hero">
+        <button class="back-link" id="backButton" type="button">← 返回列表</button>
+        <div class="detail-title">
+          <p class="eyebrow">平安银行 · 在线详情</p>
+          <h1>${escapeHtml(stock.name)}</h1>
+          <p class="subtle">${escapeHtml(stock.code)} · ${escapeHtml(stock.refreshLabel)}</p>
+        </div>
+      </section>
+
+      <section class="detail-grid">
+        ${renderMetricCard('成交价', formatPrice(stock.latestPrice), '交易时段按 1 分钟自动刷新；休市时展示最近收盘价。', stock.priceHistory || [], 'price', '横轴：交易日期', { pill })}
+        ${renderMetricCard('市值', formatMoney(stock.marketValue), '按最新成交价与当前总股本估算；历史图按收盘价回推。', marketValueHistory, 'marketValue', '横轴：交易日期', { pill })}
+        ${renderMetricCard('毛利率', formatPercent(stock.grossMargin), '毛利率使用内置财报历史数据；仅随财报更新。', stock.grossMarginHistory || [], 'grossMargin', '横轴：财报日期', { pill: '财报数据' })}
+        ${renderMetricCard('市盈率', formatPe(stock.pe), '按最新成交价与首版基线市盈率换算；历史图按收盘价回推。', peHistory, 'pe', '横轴：交易日期', { pill })}
+      </section>
+    </section>
+  `;
+}
+
+function renderAnalysis() {
+  const stock = state.stockDetail;
+  if (!stock) return '';
+  const { peHistory } = resolveDetailSeries(stock);
+  const industryPeHistory = resolveIndustryPeHistory(stock);
+  const hasIndustryPeHistory = industryPeHistory.length > 0;
+  const industryLabel = `${stock.industry || '银行'}行业市盈率`;
+  const discountThresholdHistory = state.showDiscountThreshold ? buildIndustryDiscountThreshold(industryPeHistory, 0.2) : [];
+  return `
+    <section class="page">
+      <header class="page__header">
+        <div>
+          <p class="eyebrow">估值观察</p>
+          <h2>分析</h2>
+          <p class="subtle">${escapeHtml(stock.name)} · 市盈率与成交价共用近五年交易日横轴。${hasIndustryPeHistory ? '悬浮时显示行业市盈率和估值差值。' : '行业历史估值线将在接入真实行业数据后显示。'}</p>
+        </div>
+        ${renderStatusPill(stock)}
+      </header>
+
+      <section class="analysis-stack">
+        <label class="analysis-toggle">
+          <input id="discountThresholdToggle" type="checkbox" ${state.showDiscountThreshold ? 'checked' : ''} />
+          <span>标出低于行业平均 20% 的平安银行线段</span>
+        </label>
+        ${renderMetricCard(
+          '市盈率',
+          formatPe(stock.pe),
+          hasIndustryPeHistory
+            ? `蓝线为${escapeHtml(stock.name)}，橙线为${escapeHtml(industryLabel)}；打开开关后，蓝线中低于行业平均 20% 的部分会标成红色。`
+            : '当前版本仅显示个股市盈率，行业历史估值线待接入真实数据源。',
+          peHistory,
+          'pe',
+          '横轴：交易日期',
+          {
+            pill: stock.dataPill || '现在数据',
+            className: 'metric-card--wide metric-card--compact',
+            chartOptions: {
+              interactive: true,
+              label: '市盈率',
+              width: 760,
+              height: 124,
+              comparePoints: industryPeHistory,
+              thresholdPoints: discountThresholdHistory,
+              compareLabel: industryLabel,
+              tooltipMode: 'pe-compare',
+              highlightBelowThreshold: state.showDiscountThreshold
+            }
+          }
+        )}
+        ${renderMetricCard(
+          '成交价',
+          formatPrice(stock.latestPrice),
+          '与上方共用近五年交易日横轴，方便直接对照估值和价格变化。',
+          stock.priceHistory || [],
+          'price',
+          '横轴：交易日期',
+          {
+            pill: stock.dataPill || '现在数据',
+            className: 'metric-card--wide metric-card--compact',
+            chartOptions: {
+              interactive: true,
+              label: '成交价',
+              width: 760,
+              height: 124
+            }
+          }
+        )}
+      </section>
     </section>
   `;
 }
@@ -331,40 +664,128 @@ function renderFileModeNotice() {
   `;
 }
 
+function renderShell(content) {
+  return `
+    <div class="app-layout">
+      ${renderSidebar()}
+      <main class="content">${content}</main>
+    </div>
+  `;
+}
+
+function renderRouteView() {
+  if (state.route.page === 'list') return renderHome();
+  if (state.route.page === 'analysis') return renderAnalysis();
+  return renderDetail();
+}
+
 function renderApp() {
-  document.title = state.routeCode ? `股票详情 - ${state.routeCode}` : '股票列表';
+  document.title =
+    state.route.page === 'analysis'
+      ? `分析 - ${state.route.code || TARGET_STOCK_CODE}`
+      : state.route.page === 'detail'
+        ? `股票详情 - ${state.route.code || TARGET_STOCK_CODE}`
+        : '股票列表';
+
   if (isFileMode()) {
     appEl.innerHTML = renderFileModeNotice();
     return;
   }
   if (state.error) {
-    appEl.innerHTML = renderError(state.error);
+    appEl.innerHTML = renderShell(renderError(state.error));
     return;
   }
   if (state.loading) {
-    appEl.innerHTML = renderLoading(state.routeCode ? '正在读取个股详情...' : '正在读取股票列表...');
+    const message =
+      state.route.page === 'analysis'
+        ? '正在读取分析数据...'
+        : state.route.page === 'detail'
+          ? '正在读取个股详情...'
+          : '正在读取股票列表...';
+    appEl.innerHTML = renderShell(renderLoading(message));
     return;
   }
-  appEl.innerHTML = state.routeCode ? renderDetail() : renderHome();
+  appEl.innerHTML = renderShell(renderRouteView());
   bindViewEvents();
 }
 
 function bindViewEvents() {
-  if (state.routeCode) {
-    const backButton = document.getElementById('backButton');
-    if (backButton) {
-      backButton.addEventListener('click', () => {
-        history.pushState({}, '', location.pathname);
-        state.routeCode = null;
-        state.stockDetail = null;
-        state.error = '';
-        state.loading = true;
-        refreshCurrentView();
-      });
-    }
+  bindSidebarEvents();
+  if (state.route.page === 'detail') {
+    bindDetailEvents();
     return;
   }
+  if (state.route.page === 'analysis') {
+    bindAnalysisEvents();
+    return;
+  }
+  bindHomeEvents();
+}
 
+function bindSidebarEvents() {
+  appEl.querySelectorAll('[data-nav-page]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const page = button.dataset.navPage;
+      const code = button.dataset.navCode || null;
+      navigateTo(page, code, true);
+    });
+  });
+}
+
+function bindDetailEvents() {
+  const backButton = document.getElementById('backButton');
+  if (backButton) {
+    backButton.addEventListener('click', () => {
+      navigateTo('list', null, true);
+    });
+  }
+}
+
+function bindAnalysisEvents() {
+  const toggle = document.getElementById('discountThresholdToggle');
+  if (toggle) {
+    toggle.addEventListener('change', (event) => {
+      state.showDiscountThreshold = event.target.checked;
+      renderApp();
+    });
+  }
+
+  appEl.querySelectorAll('.chart-shell.is-interactive').forEach((shell) => {
+    const tooltip = shell.querySelector('.chart-tooltip');
+    if (!tooltip) return;
+
+    const showTooltip = (point) => {
+      const shellRect = shell.getBoundingClientRect();
+      const pointRect = point.getBoundingClientRect();
+      tooltip.innerHTML = point.dataset.tooltipHtml ? decodeURIComponent(point.dataset.tooltipHtml) : '';
+      tooltip.style.left = `${pointRect.left - shellRect.left}px`;
+      tooltip.style.top = `${pointRect.top - shellRect.top - 12}px`;
+      tooltip.classList.add('is-visible');
+    };
+
+    const hideTooltip = () => {
+      tooltip.classList.remove('is-visible');
+    };
+
+    shell.addEventListener('pointermove', (event) => {
+      const point = event.target.closest('.metric-chart__hit');
+      if (!point) {
+        hideTooltip();
+        return;
+      }
+      showTooltip(point);
+    });
+
+    shell.addEventListener('pointerleave', hideTooltip);
+    shell.addEventListener('focusin', (event) => {
+      const point = event.target.closest('.metric-chart__hit');
+      if (point) showTooltip(point);
+    });
+    shell.addEventListener('focusout', hideTooltip);
+  });
+}
+
+function bindHomeEvents() {
   const searchInput = document.getElementById('searchInput');
   const tableBody = document.getElementById('tableBody');
   if (searchInput) {
@@ -383,36 +804,47 @@ function bindViewEvents() {
       const target = exact || firstMatched;
       if (target) {
         event.preventDefault();
-        openDetail(target.code);
+        navigateTo('detail', target.code, true);
       }
     });
   }
   if (tableBody) {
     tableBody.addEventListener('click', (event) => {
       const row = event.target.closest('.stock-row');
-      if (row) openDetail(row.dataset.code);
+      if (row) navigateTo('detail', row.dataset.code, true);
     });
     tableBody.addEventListener('keydown', (event) => {
       const row = event.target.closest('.stock-row');
       if (!row) return;
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        openDetail(row.dataset.code);
+        navigateTo('detail', row.dataset.code, true);
       }
     });
   }
 }
 
-function openDetail(code) {
-  history.pushState({}, '', `${location.pathname}?stock=${encodeURIComponent(code)}`);
-  state.routeCode = code;
-  state.stockDetail = null;
+function navigateTo(page, code = null, push = false) {
+  const params = new URLSearchParams();
+  if (page === 'detail' || page === 'analysis') {
+    params.set('page', page);
+    params.set('stock', code || TARGET_STOCK_CODE);
+  }
+  const target = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+  if (push) {
+    history.pushState({}, '', target);
+  }
+  state.route = { page, code: page === 'list' ? null : code || TARGET_STOCK_CODE };
   state.error = '';
   state.loading = true;
+  if (page === 'list') {
+    state.stockDetail = null;
+  }
   refreshCurrentView();
 }
 
 function secondsLeft() {
+  if (!state.nextRefreshAt) return 0;
   return Math.max(0, Math.ceil((state.nextRefreshAt - Date.now()) / 1000));
 }
 
@@ -424,10 +856,56 @@ async function fetchJson(url) {
   return response.json();
 }
 
+async function fetchServerStock(code) {
+  return fetchJson(`./api/stock?code=${encodeURIComponent(code)}`);
+}
+
 async function ensureSnapshot() {
   if (state.snapshot) return state.snapshot;
-  state.snapshot = await fetchJson(SNAPSHOT_URL);
-  return state.snapshot;
+  let lastError = null;
+  for (const url of SNAPSHOT_URLS) {
+    try {
+      state.snapshot = await fetchJson(url);
+      return state.snapshot;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('静态详情数据读取失败');
+}
+
+async function fetchIndustryPeHistory() {
+  const now = Date.now();
+  if (state.industryPeHistory && now - state.industryPeHistoryFetchedAt < 12 * 60 * 60 * 1000) {
+    return state.industryPeHistory;
+  }
+
+  const marketCode = `${INDUSTRY_INDEX_MARKET}${INDUSTRY_INDEX_CODE}`;
+  const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${marketCode},day,,,${INDUSTRY_HISTORY_LIMIT},qfq&_=${now}`;
+  const payload = await fetchJson(url);
+  const dataset = payload?.data?.[marketCode];
+  const rows = dataset?.day || dataset?.qfqday || [];
+  const currentPe = normalizeNumber(dataset?.qt?.[marketCode]?.[39]);
+  const latestClose = normalizeNumber(dataset?.qt?.[marketCode]?.[3]);
+  if (!rows.length || currentPe == null || latestClose == null || latestClose <= 0) {
+    throw new Error('未读取到银行行业估值历史');
+  }
+
+  const history = rows
+    .map((row) => {
+      const date = row?.[0];
+      const close = normalizeNumber(row?.[2]);
+      if (!date || close == null) return null;
+      return {
+        date,
+        value: Number(((close / latestClose) * currentPe).toFixed(4))
+      };
+    })
+    .filter(Boolean);
+
+  state.industryPeHistory = history;
+  state.industryPeHistoryFetchedAt = now;
+  return history;
 }
 
 function loadScript(src) {
@@ -473,47 +951,174 @@ async function fetchTencentQuote(code) {
     code,
     name: fields[1] || '平安银行',
     latestPrice,
+    pe: normalizeNumber(fields[39]),
     updatedAt: new Date().toISOString()
   };
 }
 
-function buildLiveStock(snapshot, quote) {
-  const latestPrice = normalizeNumber(quote?.latestPrice) ?? normalizeNumber(snapshot.latestPrice);
-  const fallbackUpdatedAt = new Date().toISOString();
+function getShanghaiClock(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: MARKET_TIMEZONE,
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  });
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value])
+  );
+  return {
+    weekday: parts.weekday,
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second)
+  };
+}
+
+function getMarketPhase(date = new Date()) {
+  const clock = getShanghaiClock(date);
+  const isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(clock.weekday);
+  if (!isWeekday) {
+    return { phase: 'closed', label: '非交易日，展示最新收盘数据', autoRefresh: false };
+  }
+  const totalMinutes = clock.hour * 60 + clock.minute;
+  if ((totalMinutes >= 570 && totalMinutes < 690) || (totalMinutes >= 780 && totalMinutes < 900)) {
+    return { phase: 'live', label: '交易时段内，每 1 分钟刷新', autoRefresh: true };
+  }
+  if (totalMinutes >= 690 && totalMinutes < 780) {
+    return { phase: 'break', label: '午间休市，暂停自动刷新', autoRefresh: false };
+  }
+  return { phase: 'closed', label: '非交易时段，展示最新收盘数据', autoRefresh: false };
+}
+
+function toCloseTimestamp(dateText) {
+  if (!dateText) return new Date().toISOString();
+  return `${dateText}T15:00:00+08:00`;
+}
+
+function getLatestClose(snapshot) {
+  const latestPoint = snapshot?.priceHistory?.length ? snapshot.priceHistory[snapshot.priceHistory.length - 1] : null;
+  return {
+    latestPrice: normalizeNumber(latestPoint?.value) ?? normalizeNumber(snapshot?.latestPrice),
+    updatedAt: toCloseTimestamp(latestPoint?.date || formatAxisDate(snapshot?.updatedAt || new Date().toISOString()))
+  };
+}
+
+function buildStock(snapshot, quote, marketPhase, options = {}) {
+  const latestPrice =
+    normalizeNumber(quote?.latestPrice) ??
+    normalizeNumber(options.latestPrice) ??
+    normalizeNumber(snapshot.latestPrice);
+  const pe =
+    normalizeNumber(quote?.pe) ??
+    normalizeNumber(options.pe) ??
+    estimatePe(latestPrice, snapshot);
+  const updatedAt = options.updatedAt || quote?.updatedAt || snapshot.updatedAt || new Date().toISOString();
+  const shouldAutoRefresh = marketPhase.autoRefresh && latestPrice != null;
+  const pill = marketPhase.phase === 'live' ? '实时数据' : marketPhase.phase === 'break' ? '暂停刷新' : '最新收盘';
   return {
     code: snapshot.code,
     name: quote?.name || snapshot.name,
+    industry: snapshot.industry || '银行',
     latestPrice,
     marketValue: estimateMarketValue(latestPrice, snapshot),
     grossMargin: normalizeNumber(snapshot.grossMargin),
     grossMarginUpdatedAt: snapshot.grossMarginUpdatedAt || lastGrossMarginDate(snapshot),
-    pe: estimatePe(latestPrice, snapshot),
+    pe,
     shareCountEstimate: normalizeNumber(snapshot.shareCountEstimate),
-    updatedAt: quote?.updatedAt || fallbackUpdatedAt,
-    source: '腾讯实时行情 + 首版内置历史数据',
-    refreshIntervalSeconds: DEFAULT_REFRESH_MS / 1000,
+    updatedAt,
+    source: options.source || snapshot.source || '内置数据',
+    refreshLabel: options.refreshLabel || marketPhase.label,
+    shouldAutoRefresh,
+    dataPill: pill,
     priceHistory: snapshot.priceHistory || [],
-    grossMarginHistory: snapshot.grossMarginHistory || []
+    grossMarginHistory: snapshot.grossMarginHistory || [],
+    industryPeHistory: snapshot.industryPeHistory || []
   };
 }
 
 async function buildSnapshotBackedStock() {
+  try {
+    const payload = await fetchServerStock(TARGET_STOCK_CODE);
+    if (Array.isArray(payload.industryPeHistory) && payload.industryPeHistory.length) {
+      const marketPhase = getMarketPhase();
+      return buildStock(payload, null, marketPhase, {
+        latestPrice: normalizeNumber(payload.latestPrice),
+        pe: normalizeNumber(payload.pe),
+        updatedAt: payload.updatedAt,
+        source: payload.source,
+        refreshLabel: marketPhase.label,
+      });
+    }
+  } catch {}
+
   const snapshot = await ensureSnapshot();
+  let industryPeHistory = snapshot.industryPeHistory || [];
+  try {
+    industryPeHistory = await fetchIndustryPeHistory();
+  } catch {}
+  const marketPhase = getMarketPhase();
+  if (marketPhase.phase === 'live') {
+    try {
+      const quote = await fetchTencentQuote(snapshot.code || TARGET_STOCK_CODE);
+      return buildStock({ ...snapshot, industryPeHistory }, quote, marketPhase, {
+        source: '数据源：东方财富财报 + 腾讯个股行情PE + 腾讯银行指数PE代理'
+      });
+    } catch {
+      const latestClose = getLatestClose(snapshot);
+      return buildStock({ ...snapshot, industryPeHistory }, null, { phase: 'closed', label: '实时行情暂不可用，展示最近收盘数据', autoRefresh: false }, {
+        latestPrice: latestClose.latestPrice,
+        updatedAt: latestClose.updatedAt,
+        source: '数据源：东方财富财报快照 + 内置收盘历史 + 内置个股PE基线',
+        refreshLabel: '实时行情暂不可用，当前展示最近收盘数据'
+      });
+    }
+  }
+
   try {
     const quote = await fetchTencentQuote(snapshot.code || TARGET_STOCK_CODE);
-    return buildLiveStock(snapshot, quote);
-  } catch (error) {
-    const fallbackStock = buildLiveStock(snapshot, null);
-    fallbackStock.updatedAt = new Date().toISOString();
-    return fallbackStock;
+    const latestClose = getLatestClose(snapshot);
+    return buildStock({ ...snapshot, industryPeHistory }, quote, marketPhase, {
+      updatedAt: marketPhase.phase === 'closed' ? latestClose.updatedAt : quote.updatedAt,
+      source:
+        marketPhase.phase === 'break'
+          ? '数据源：东方财富财报 + 腾讯个股行情PE + 腾讯银行指数PE代理'
+          : '数据源：东方财富财报 + 腾讯个股收盘PE + 腾讯银行指数PE代理'
+    });
+  } catch {
+    const latestClose = getLatestClose(snapshot);
+    return buildStock({ ...snapshot, industryPeHistory }, null, marketPhase, {
+      latestPrice: latestClose.latestPrice,
+      updatedAt: latestClose.updatedAt,
+      source: '数据源：东方财富财报快照 + 内置收盘历史 + 内置个股PE基线'
+    });
   }
+}
+
+function updateRefreshSchedule(stock) {
+  if (stock?.shouldAutoRefresh) {
+    state.refreshMs = DEFAULT_REFRESH_MS;
+    state.nextRefreshAt = Date.now() + state.refreshMs;
+    return;
+  }
+  state.refreshMs = 0;
+  state.nextRefreshAt = null;
 }
 
 async function refreshMarket() {
   const stock = await buildSnapshotBackedStock();
   state.stocks = [stock];
-  state.refreshMs = DEFAULT_REFRESH_MS;
-  state.nextRefreshAt = Date.now() + state.refreshMs;
+  updateRefreshSchedule(stock);
 }
 
 async function refreshStockDetail(code) {
@@ -522,8 +1127,8 @@ async function refreshStockDetail(code) {
     throw new Error('暂未找到该股票');
   }
   state.stockDetail = stock;
-  state.refreshMs = DEFAULT_REFRESH_MS;
-  state.nextRefreshAt = Date.now() + state.refreshMs;
+  state.stocks = [stock];
+  updateRefreshSchedule(stock);
 }
 
 async function refreshCurrentView() {
@@ -531,10 +1136,10 @@ async function refreshCurrentView() {
   state.isRefreshing = true;
   try {
     state.error = '';
-    if (state.routeCode) {
-      await refreshStockDetail(state.routeCode);
-    } else {
+    if (state.route.page === 'list') {
       await refreshMarket();
+    } else {
+      await refreshStockDetail(state.route.code || TARGET_STOCK_CODE);
     }
     state.loading = false;
     renderApp();
@@ -548,7 +1153,7 @@ async function refreshCurrentView() {
 }
 
 window.addEventListener('popstate', () => {
-  state.routeCode = getRouteCode();
+  state.route = getRoute();
   state.loading = true;
   state.error = '';
   refreshCurrentView();
@@ -556,13 +1161,15 @@ window.addEventListener('popstate', () => {
 
 setInterval(() => {
   const timerBadge = document.getElementById('timerBadge');
-  if (timerBadge) {
-    timerBadge.textContent = `下次刷新：${secondsLeft()}s`;
+  const currentStock = state.route.page === 'list' ? state.stocks[0] : state.stockDetail;
+  if (timerBadge && currentStock) {
+    timerBadge.textContent = getRefreshText(currentStock);
   }
 }, 1000);
 
 setInterval(() => {
   if (isFileMode()) return;
+  if (!state.nextRefreshAt) return;
   if (Date.now() < state.nextRefreshAt) return;
   refreshCurrentView();
 }, 1000);
