@@ -1,5 +1,7 @@
 # 文档索引
 
+- [ETF 网站独立接入与云端更新](./ETF云端更新.md)
+
 - 安装依赖：运行 `pip3 install -r requirements.txt`
 - 启动方式：运行 `python3 server.py`
 - 当前电脑访问：`http://127.0.0.1:8000`

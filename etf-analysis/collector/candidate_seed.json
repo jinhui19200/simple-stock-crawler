@@ -1,0 +1,2072 @@
+[
+  {
+    "code": "588200",
+    "name": "科创芯片ETF嘉实",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 642.79,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588200.html"
+  },
+  {
+    "code": "512880",
+    "name": "证券ETF国泰",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 592.69,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512880.html"
+  },
+  {
+    "code": "515880",
+    "name": "通信ETF国泰",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 590.19,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515880.html"
+  },
+  {
+    "code": "159516",
+    "name": "半导体设备ETF国泰",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 441.64,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159516.html"
+  },
+  {
+    "code": "159995",
+    "name": "芯片ETF华夏",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 371.99,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159995.html"
+  },
+  {
+    "code": "513050",
+    "name": "中概互联网ETF易方达",
+    "type": "指数型-海外股票",
+    "category": "港股行业主题",
+    "scale_yi": 330.26,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513050.html"
+  },
+  {
+    "code": "159792",
+    "name": "港股通互联网ETF富国",
+    "type": "指数型-股票",
+    "category": "港股行业主题",
+    "scale_yi": 327.49,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159792.html"
+  },
+  {
+    "code": "512170",
+    "name": "医疗ETF华宝",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 256.24,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512170.html"
+  },
+  {
+    "code": "513330",
+    "name": "恒生互联网ETF华夏",
+    "type": "指数型-海外股票",
+    "category": "港股行业主题",
+    "scale_yi": 254.86,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513330.html"
+  },
+  {
+    "code": "512480",
+    "name": "半导体ETF国联安",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 254.06,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512480.html"
+  },
+  {
+    "code": "515050",
+    "name": "通信ETF华夏",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 249.91,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515050.html"
+  },
+  {
+    "code": "159819",
+    "name": "人工智能ETF易方达",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 245.18,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159819.html"
+  },
+  {
+    "code": "588170",
+    "name": "科创半导体ETF华夏",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 242.33,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588170.html"
+  },
+  {
+    "code": "513120",
+    "name": "港股创新药ETF广发",
+    "type": "指数型-海外股票",
+    "category": "医药与医疗",
+    "scale_yi": 240.39,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513120.html"
+  },
+  {
+    "code": "512400",
+    "name": "有色金属ETF南方",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 224.89,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512400.html"
+  },
+  {
+    "code": "159570",
+    "name": "港股通创新药ETF汇添富",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 199.89,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159570.html"
+  },
+  {
+    "code": "159636",
+    "name": "港股通科技30ETF工银",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 197.67,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159636.html"
+  },
+  {
+    "code": "513090",
+    "name": "香港证券ETF易方达",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 189.75,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513090.html"
+  },
+  {
+    "code": "159206",
+    "name": "卫星ETF永赢",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 176.69,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159206.html"
+  },
+  {
+    "code": "562500",
+    "name": "机器人ETF华夏",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 174.44,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/562500.html"
+  },
+  {
+    "code": "512010",
+    "name": "医药ETF易方达",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 171.45,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512010.html"
+  },
+  {
+    "code": "159558",
+    "name": "半导体设备ETF易方达",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 170.61,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159558.html"
+  },
+  {
+    "code": "159530",
+    "name": "机器人ETF易方达",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 159.99,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159530.html"
+  },
+  {
+    "code": "159992",
+    "name": "创新药ETF银华",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 159.65,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159992.html"
+  },
+  {
+    "code": "159870",
+    "name": "化工ETF鹏华",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 158.91,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159870.html"
+  },
+  {
+    "code": "159509",
+    "name": "纳指科技ETF景顺",
+    "type": "指数型-海外股票",
+    "category": "人工智能与软件",
+    "scale_yi": 151.28,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159509.html"
+  },
+  {
+    "code": "159928",
+    "name": "消费ETF汇添富",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 143.44,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159928.html"
+  },
+  {
+    "code": "512070",
+    "name": "证券保险ETF易方达",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 137.71,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512070.html"
+  },
+  {
+    "code": "512760",
+    "name": "芯片ETF国泰",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 136.85,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512760.html"
+  },
+  {
+    "code": "513980",
+    "name": "港股科技ETF景顺",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 136.3,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513980.html"
+  },
+  {
+    "code": "513750",
+    "name": "港股通非银ETF广发",
+    "type": "指数型-股票",
+    "category": "港股行业主题",
+    "scale_yi": 135.31,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513750.html"
+  },
+  {
+    "code": "512690",
+    "name": "酒ETF鹏华",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 135.1,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512690.html"
+  },
+  {
+    "code": "513310",
+    "name": "中韩半导体ETF华泰柏瑞",
+    "type": "指数型-海外股票",
+    "category": "半导体与芯片",
+    "scale_yi": 134.65,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513310.html"
+  },
+  {
+    "code": "560780",
+    "name": "半导体设备ETF广发",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 116.1,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/560780.html"
+  },
+  {
+    "code": "159841",
+    "name": "证券ETF天弘",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 113.46,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159841.html"
+  },
+  {
+    "code": "515220",
+    "name": "煤炭ETF国泰",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 112.79,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515220.html"
+  },
+  {
+    "code": "512800",
+    "name": "银行ETF华宝",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 105.6,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512800.html"
+  },
+  {
+    "code": "159755",
+    "name": "电池ETF广发",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 104.85,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159755.html"
+  },
+  {
+    "code": "515120",
+    "name": "创新药ETF广发",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 104.27,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515120.html"
+  },
+  {
+    "code": "515070",
+    "name": "人工智能ETF华夏",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 102.54,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515070.html"
+  },
+  {
+    "code": "516650",
+    "name": "有色金属ETF华夏",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 94.6,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516650.html"
+  },
+  {
+    "code": "560860",
+    "name": "工业有色ETF万家",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 91.11,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/560860.html"
+  },
+  {
+    "code": "588750",
+    "name": "科创芯片ETF汇添富",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 88.58,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588750.html"
+  },
+  {
+    "code": "159611",
+    "name": "电力ETF广发",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 87.18,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159611.html"
+  },
+  {
+    "code": "562590",
+    "name": "半导体设备ETF华夏",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 83.19,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/562590.html"
+  },
+  {
+    "code": "159363",
+    "name": "创业板人工智能ETF华宝",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 81.55,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159363.html"
+  },
+  {
+    "code": "512900",
+    "name": "证券ETF南方",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 79.59,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512900.html"
+  },
+  {
+    "code": "159869",
+    "name": "游戏ETF华夏",
+    "type": "指数型-股票",
+    "category": "传媒与文娱",
+    "scale_yi": 79.11,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159869.html"
+  },
+  {
+    "code": "516150",
+    "name": "稀土ETF嘉实",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 78.31,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516150.html"
+  },
+  {
+    "code": "159852",
+    "name": "软件ETF嘉实",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 77.97,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159852.html"
+  },
+  {
+    "code": "159813",
+    "name": "半导体ETF鹏华",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 77.05,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159813.html"
+  },
+  {
+    "code": "512710",
+    "name": "军工龙头ETF富国",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 76.96,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512710.html"
+  },
+  {
+    "code": "561980",
+    "name": "半导体设备ETF招商",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 74.83,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/561980.html"
+  },
+  {
+    "code": "515980",
+    "name": "人工智能ETF华富",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 72.86,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515980.html"
+  },
+  {
+    "code": "159157",
+    "name": "有色金属ETF天弘",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 71.72,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159157.html"
+  },
+  {
+    "code": "159796",
+    "name": "电池ETF汇添富",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 71.49,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159796.html"
+  },
+  {
+    "code": "515790",
+    "name": "光伏ETF华泰柏瑞",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 70.54,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515790.html"
+  },
+  {
+    "code": "159262",
+    "name": "港股通科技ETF广发",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 68.85,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159262.html"
+  },
+  {
+    "code": "512660",
+    "name": "军工ETF国泰",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 67.43,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512660.html"
+  },
+  {
+    "code": "159801",
+    "name": "芯片ETF广发",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 66.97,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159801.html"
+  },
+  {
+    "code": "159567",
+    "name": "港股创新药ETF银华",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 65.44,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159567.html"
+  },
+  {
+    "code": "159566",
+    "name": "储能电池ETF易方达",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 65.23,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159566.html"
+  },
+  {
+    "code": "159851",
+    "name": "金融科技ETF华宝",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 64.42,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159851.html"
+  },
+  {
+    "code": "159770",
+    "name": "机器人ETF天弘",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 62.63,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159770.html"
+  },
+  {
+    "code": "588290",
+    "name": "科创芯片ETF华安",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 61.62,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588290.html"
+  },
+  {
+    "code": "159732",
+    "name": "消费电子ETF华夏",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 59.63,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159732.html"
+  },
+  {
+    "code": "588710",
+    "name": "科创半导体设备ETF华泰柏瑞",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 56.55,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588710.html"
+  },
+  {
+    "code": "513060",
+    "name": "恒生医疗ETF博时",
+    "type": "指数型-海外股票",
+    "category": "医药与医疗",
+    "scale_yi": 54.63,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513060.html"
+  },
+  {
+    "code": "589130",
+    "name": "科创芯片ETF易方达",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 53.49,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/589130.html"
+  },
+  {
+    "code": "159980",
+    "name": "有色ETF大成",
+    "type": "指数型-其他",
+    "category": "能源与资源",
+    "scale_yi": 52.84,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159980.html"
+  },
+  {
+    "code": "159865",
+    "name": "养殖ETF国泰",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 52.29,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159865.html"
+  },
+  {
+    "code": "159217",
+    "name": "港股通创新药ETF工银",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 51.47,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159217.html"
+  },
+  {
+    "code": "516120",
+    "name": "化工ETF富国",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 50.67,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516120.html"
+  },
+  {
+    "code": "159994",
+    "name": "通信ETF银华",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 50.4,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159994.html"
+  },
+  {
+    "code": "513040",
+    "name": "港股通互联网ETF易方达",
+    "type": "指数型-股票",
+    "category": "港股行业主题",
+    "scale_yi": 50.13,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513040.html"
+  },
+  {
+    "code": "159246",
+    "name": "创业板人工智能ETF富国",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 49.37,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159246.html"
+  },
+  {
+    "code": "515230",
+    "name": "软件ETF国泰",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 48.32,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515230.html"
+  },
+  {
+    "code": "159227",
+    "name": "航空航天ETF华夏",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 48.2,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159227.html"
+  },
+  {
+    "code": "588890",
+    "name": "科创芯片ETF南方",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 47.54,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588890.html"
+  },
+  {
+    "code": "513770",
+    "name": "港股互联网ETF华宝",
+    "type": "指数型-股票",
+    "category": "港股行业主题",
+    "scale_yi": 47.21,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513770.html"
+  },
+  {
+    "code": "516160",
+    "name": "新能源ETF南方",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 47.19,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516160.html"
+  },
+  {
+    "code": "159583",
+    "name": "通信ETF富国",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 44.84,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159583.html"
+  },
+  {
+    "code": "159859",
+    "name": "生物医药ETF天弘",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 44.61,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159859.html"
+  },
+  {
+    "code": "159892",
+    "name": "恒生医药ETF华夏",
+    "type": "指数型-海外股票",
+    "category": "医药与医疗",
+    "scale_yi": 44.12,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159892.html"
+  },
+  {
+    "code": "159938",
+    "name": "医药ETF广发",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 43.95,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159938.html"
+  },
+  {
+    "code": "512680",
+    "name": "军工ETF广发",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 43.69,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512680.html"
+  },
+  {
+    "code": "159993",
+    "name": "证券ETF鹏华",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 43.08,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159993.html"
+  },
+  {
+    "code": "563230",
+    "name": "卫星ETF富国",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 42.51,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/563230.html"
+  },
+  {
+    "code": "561910",
+    "name": "电池ETF招商",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 42.39,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/561910.html"
+  },
+  {
+    "code": "159316",
+    "name": "港股通创新药ETF易方达",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 41.54,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159316.html"
+  },
+  {
+    "code": "159736",
+    "name": "食品饮料ETF天弘",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 40.83,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159736.html"
+  },
+  {
+    "code": "515000",
+    "name": "科技ETF华宝",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 40.6,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515000.html"
+  },
+  {
+    "code": "515170",
+    "name": "食品饮料ETF华夏",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 39.29,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515170.html"
+  },
+  {
+    "code": "159218",
+    "name": "卫星ETF招商",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 38.52,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159218.html"
+  },
+  {
+    "code": "159883",
+    "name": "医疗器械ETF永赢",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 38.29,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159883.html"
+  },
+  {
+    "code": "512570",
+    "name": "证券ETF易方达",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 37.99,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512570.html"
+  },
+  {
+    "code": "512290",
+    "name": "生物医药ETF国泰",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 37.03,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512290.html"
+  },
+  {
+    "code": "515290",
+    "name": "银行ETF天弘",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 36.96,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515290.html"
+  },
+  {
+    "code": "159605",
+    "name": "中概互联ETF广发",
+    "type": "指数型-海外股票",
+    "category": "港股行业主题",
+    "scale_yi": 34.4,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159605.html"
+  },
+  {
+    "code": "512980",
+    "name": "传媒ETF广发",
+    "type": "指数型-股票",
+    "category": "传媒与文娱",
+    "scale_yi": 34.35,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512980.html"
+  },
+  {
+    "code": "516020",
+    "name": "化工ETF华宝",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 34.25,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516020.html"
+  },
+  {
+    "code": "512930",
+    "name": "AI人工智能ETF平安",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 33.33,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512930.html"
+  },
+  {
+    "code": "513160",
+    "name": "港股科技ETF银华",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 33.1,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513160.html"
+  },
+  {
+    "code": "159667",
+    "name": "工业母机ETF国泰",
+    "type": "指数型-股票",
+    "category": "工业制造",
+    "scale_yi": 32.83,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159667.html"
+  },
+  {
+    "code": "520980",
+    "name": "港股通科技ETF汇添富",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 32.28,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/520980.html"
+  },
+  {
+    "code": "512200",
+    "name": "房地产ETF南方",
+    "type": "指数型-股票",
+    "category": "房地产",
+    "scale_yi": 31.52,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512200.html"
+  },
+  {
+    "code": "515030",
+    "name": "新能源车ETF华夏",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 30.68,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515030.html"
+  },
+  {
+    "code": "516350",
+    "name": "芯片ETF易方达",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 29.8,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516350.html"
+  },
+  {
+    "code": "515650",
+    "name": "消费50ETF富国",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 29.73,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515650.html"
+  },
+  {
+    "code": "588790",
+    "name": "科创AIETF博时",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 29.43,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588790.html"
+  },
+  {
+    "code": "159766",
+    "name": "旅游ETF富国",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 29.32,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159766.html"
+  },
+  {
+    "code": "159652",
+    "name": "有色ETF汇添富",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 28.72,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159652.html"
+  },
+  {
+    "code": "560280",
+    "name": "工程机械ETF广发",
+    "type": "指数型-股票",
+    "category": "工业制造",
+    "scale_yi": 28.16,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/560280.html"
+  },
+  {
+    "code": "159382",
+    "name": "创业板人工智能ETF南方",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 27.12,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159382.html"
+  },
+  {
+    "code": "560090",
+    "name": "证券ETF汇添富",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 26.91,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/560090.html"
+  },
+  {
+    "code": "589020",
+    "name": "科创半导体设备ETF鹏华",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 26.53,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/589020.html"
+  },
+  {
+    "code": "562950",
+    "name": "消费电子ETF易方达",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 26.25,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/562950.html"
+  },
+  {
+    "code": "159625",
+    "name": "绿色电力ETF嘉实",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 26.07,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159625.html"
+  },
+  {
+    "code": "561560",
+    "name": "电力ETF华泰柏瑞",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 25.73,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/561560.html"
+  },
+  {
+    "code": "159981",
+    "name": "能源化工ETF建信",
+    "type": "指数型-其他",
+    "category": "能源与资源",
+    "scale_yi": 25.56,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159981.html"
+  },
+  {
+    "code": "516640",
+    "name": "芯片ETF富国",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 24.91,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516640.html"
+  },
+  {
+    "code": "513860",
+    "name": "港股通科技ETF海富通",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 24.63,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513860.html"
+  },
+  {
+    "code": "513020",
+    "name": "港股科技ETF国泰",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 24.53,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513020.html"
+  },
+  {
+    "code": "516510",
+    "name": "云计算ETF易方达",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 24.52,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516510.html"
+  },
+  {
+    "code": "520500",
+    "name": "恒生创新药ETF华泰柏瑞",
+    "type": "指数型-海外股票",
+    "category": "医药与医疗",
+    "scale_yi": 24.5,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/520500.html"
+  },
+  {
+    "code": "513780",
+    "name": "港股创新药ETF景顺",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 24.31,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513780.html"
+  },
+  {
+    "code": "515010",
+    "name": "证券ETF华夏",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 24.15,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515010.html"
+  },
+  {
+    "code": "159327",
+    "name": "半导体设备ETF万家",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 23.85,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159327.html"
+  },
+  {
+    "code": "561160",
+    "name": "电池ETF富国",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 23.39,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/561160.html"
+  },
+  {
+    "code": "516010",
+    "name": "游戏ETF国泰",
+    "type": "指数型-股票",
+    "category": "传媒与文娱",
+    "scale_yi": 23.13,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516010.html"
+  },
+  {
+    "code": "159381",
+    "name": "创业板人工智能ETF华夏",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 23.08,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159381.html"
+  },
+  {
+    "code": "560080",
+    "name": "中药ETF汇添富",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 23.05,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/560080.html"
+  },
+  {
+    "code": "520880",
+    "name": "港股通创新药ETF华宝",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 22.84,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/520880.html"
+  },
+  {
+    "code": "159559",
+    "name": "机器人ETF景顺",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 22.67,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159559.html"
+  },
+  {
+    "code": "516780",
+    "name": "稀土ETF华泰柏瑞",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 22.67,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516780.html"
+  },
+  {
+    "code": "159599",
+    "name": "芯片ETF东财",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 22.64,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159599.html"
+  },
+  {
+    "code": "159267",
+    "name": "航天ETF华安",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 22.62,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159267.html"
+  },
+  {
+    "code": "159929",
+    "name": "医药ETF汇添富",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 22.13,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159929.html"
+  },
+  {
+    "code": "159506",
+    "name": "港股通医疗ETF富国",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 22.12,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159506.html"
+  },
+  {
+    "code": "159101",
+    "name": "港股通科技ETF华夏",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 22.09,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159101.html"
+  },
+  {
+    "code": "159147",
+    "name": "电池ETF南方",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 22.03,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159147.html"
+  },
+  {
+    "code": "589190",
+    "name": "科创芯片ETF华宝",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 21.97,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/589190.html"
+  },
+  {
+    "code": "589720",
+    "name": "科创创新药ETF国泰",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 21.97,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/589720.html"
+  },
+  {
+    "code": "159828",
+    "name": "医疗ETF国泰",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 21.84,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159828.html"
+  },
+  {
+    "code": "516080",
+    "name": "创新药ETF易方达",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 21.58,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516080.html"
+  },
+  {
+    "code": "516310",
+    "name": "银行ETF易方达",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 21.33,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516310.html"
+  },
+  {
+    "code": "512630",
+    "name": "卫星ETF广发",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 20.86,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512630.html"
+  },
+  {
+    "code": "588760",
+    "name": "科创人工智能ETF广发",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 20.38,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588760.html"
+  },
+  {
+    "code": "159133",
+    "name": "化工ETF天弘",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 20.34,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159133.html"
+  },
+  {
+    "code": "159272",
+    "name": "机器人ETF富国",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 20.14,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159272.html"
+  },
+  {
+    "code": "159131",
+    "name": "港股通信息技术ETF华宝",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 19.79,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159131.html"
+  },
+  {
+    "code": "563530",
+    "name": "卫星ETF易方达",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 19.72,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/563530.html"
+  },
+  {
+    "code": "159857",
+    "name": "光伏ETF天弘",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 19.67,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159857.html"
+  },
+  {
+    "code": "159141",
+    "name": "科创创业人工智能ETF永赢",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 19.33,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159141.html"
+  },
+  {
+    "code": "159518",
+    "name": "标普油气ETF嘉实",
+    "type": "指数型-海外股票",
+    "category": "能源与资源",
+    "scale_yi": 19.29,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159518.html"
+  },
+  {
+    "code": "159997",
+    "name": "电子ETF天弘",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 18.74,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159997.html"
+  },
+  {
+    "code": "159840",
+    "name": "锂电池ETF工银",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 18.73,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159840.html"
+  },
+  {
+    "code": "159310",
+    "name": "芯片ETF天弘",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 18.69,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159310.html"
+  },
+  {
+    "code": "589070",
+    "name": "科创芯片设计ETF天弘",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 18.65,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/589070.html"
+  },
+  {
+    "code": "159297",
+    "name": "港股通创新药ETF南方",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 18.48,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159297.html"
+  },
+  {
+    "code": "159998",
+    "name": "计算机ETF天弘",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 18.17,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159998.html"
+  },
+  {
+    "code": "512940",
+    "name": "有色ETF华安",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 18.06,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512940.html"
+  },
+  {
+    "code": "516820",
+    "name": "医疗创新ETF平安",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 17.88,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516820.html"
+  },
+  {
+    "code": "159502",
+    "name": "标普生物科技ETF嘉实",
+    "type": "指数型-海外股票",
+    "category": "人工智能与软件",
+    "scale_yi": 17.76,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159502.html"
+  },
+  {
+    "code": "561360",
+    "name": "石油ETF国泰",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 17.68,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/561360.html"
+  },
+  {
+    "code": "589010",
+    "name": "科创人工智能ETF华夏",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 17.16,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/589010.html"
+  },
+  {
+    "code": "517380",
+    "name": "创新药ETF天弘",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 17.04,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/517380.html"
+  },
+  {
+    "code": "588810",
+    "name": "科创芯片ETF富国",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 16.72,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588810.html"
+  },
+  {
+    "code": "512670",
+    "name": "国防ETF鹏华",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 16.66,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512670.html"
+  },
+  {
+    "code": "561330",
+    "name": "矿业ETF国泰",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 16.62,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/561330.html"
+  },
+  {
+    "code": "159692",
+    "name": "证券ETF东财",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 16.49,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159692.html"
+  },
+  {
+    "code": "516670",
+    "name": "畜牧养殖ETF招商",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 16.34,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516670.html"
+  },
+  {
+    "code": "159325",
+    "name": "半导体ETF南方",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 16.25,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159325.html"
+  },
+  {
+    "code": "513190",
+    "name": "港股通金融ETF华夏",
+    "type": "指数型-股票",
+    "category": "港股行业主题",
+    "scale_yi": 16.13,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513190.html"
+  },
+  {
+    "code": "560770",
+    "name": "机器人ETF招商",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 15.99,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/560770.html"
+  },
+  {
+    "code": "515700",
+    "name": "新能源车ETF平安",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 15.73,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515700.html"
+  },
+  {
+    "code": "159825",
+    "name": "农业ETF富国",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 15.28,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159825.html"
+  },
+  {
+    "code": "513290",
+    "name": "纳指生物科技ETF汇添富",
+    "type": "指数型-海外股票",
+    "category": "人工智能与软件",
+    "scale_yi": 15.28,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513290.html"
+  },
+  {
+    "code": "159847",
+    "name": "医疗ETF易方达",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 15.26,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159847.html"
+  },
+  {
+    "code": "159242",
+    "name": "创业板人工智能ETF大成",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 15.17,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159242.html"
+  },
+  {
+    "code": "159258",
+    "name": "机器人ETF南方",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 14.95,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159258.html"
+  },
+  {
+    "code": "561100",
+    "name": "消费电子ETF富国",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 14.91,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/561100.html"
+  },
+  {
+    "code": "159278",
+    "name": "机器人ETF鹏华",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 14.76,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159278.html"
+  },
+  {
+    "code": "159875",
+    "name": "新能源ETF嘉实",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 14.71,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159875.html"
+  },
+  {
+    "code": "159142",
+    "name": "科创创业人工智能ETF景顺",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 14.6,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159142.html"
+  },
+  {
+    "code": "159269",
+    "name": "港股通科技ETF南方",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 14.55,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159269.html"
+  },
+  {
+    "code": "560260",
+    "name": "医疗ETF广发",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 14.5,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/560260.html"
+  },
+  {
+    "code": "159837",
+    "name": "生物科技ETF易方达",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 14.49,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159837.html"
+  },
+  {
+    "code": "159128",
+    "name": "港股科技ETF天弘",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 14.03,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159128.html"
+  },
+  {
+    "code": "510150",
+    "name": "消费ETF招商",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 13.88,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/510150.html"
+  },
+  {
+    "code": "159638",
+    "name": "高端装备ETF嘉实",
+    "type": "指数型-股票",
+    "category": "工业制造",
+    "scale_yi": 13.6,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159638.html"
+  },
+  {
+    "code": "159129",
+    "name": "化工ETF嘉实",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 13.59,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159129.html"
+  },
+  {
+    "code": "159876",
+    "name": "有色ETF华宝",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 13.45,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159876.html"
+  },
+  {
+    "code": "562960",
+    "name": "绿色电力ETF易方达",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 13.37,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/562960.html"
+  },
+  {
+    "code": "159697",
+    "name": "石油ETF鹏华",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 12.98,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159697.html"
+  },
+  {
+    "code": "588730",
+    "name": "科创人工智能ETF易方达",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 12.89,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588730.html"
+  },
+  {
+    "code": "513070",
+    "name": "港股通消费ETF易方达",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 12.88,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513070.html"
+  },
+  {
+    "code": "159647",
+    "name": "中药ETF鹏华",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 12.72,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159647.html"
+  },
+  {
+    "code": "515400",
+    "name": "大数据ETF富国",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 12.71,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515400.html"
+  },
+  {
+    "code": "516970",
+    "name": "基建ETF广发",
+    "type": "指数型-股票",
+    "category": "工业制造",
+    "scale_yi": 12.56,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516970.html"
+  },
+  {
+    "code": "516860",
+    "name": "金融科技ETF博时",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 12.52,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516860.html"
+  },
+  {
+    "code": "159622",
+    "name": "创新药ETF东财",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 12.43,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159622.html"
+  },
+  {
+    "code": "159790",
+    "name": "碳中和ETF华夏",
+    "type": "指数型-股票",
+    "category": "环保",
+    "scale_yi": 12.23,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159790.html"
+  },
+  {
+    "code": "560830",
+    "name": "电力ETF华夏",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 11.99,
+    "scale_date": "2026-05-19",
+    "url": "https://fund.eastmoney.com/560830.html"
+  },
+  {
+    "code": "159241",
+    "name": "航空航天ETF天弘",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 11.9,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159241.html"
+  },
+  {
+    "code": "513970",
+    "name": "恒生消费ETF景顺",
+    "type": "指数型-海外股票",
+    "category": "消费",
+    "scale_yi": 11.9,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/513970.html"
+  },
+  {
+    "code": "516570",
+    "name": "化工行业ETF易方达",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 11.86,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516570.html"
+  },
+  {
+    "code": "159880",
+    "name": "有色ETF鹏华",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 11.69,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159880.html"
+  },
+  {
+    "code": "159750",
+    "name": "港股科技50ETF招商",
+    "type": "指数型-海外股票",
+    "category": "人工智能与软件",
+    "scale_yi": 11.52,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159750.html"
+  },
+  {
+    "code": "515710",
+    "name": "食品饮料ETF华宝",
+    "type": "指数型-股票",
+    "category": "消费",
+    "scale_yi": 11.47,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515710.html"
+  },
+  {
+    "code": "588780",
+    "name": "科创芯片设计ETF国联安",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 11.4,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/588780.html"
+  },
+  {
+    "code": "563790",
+    "name": "卫星ETF鹏华",
+    "type": "指数型-股票",
+    "category": "国防军工与航空",
+    "scale_yi": 11.37,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/563790.html"
+  },
+  {
+    "code": "159871",
+    "name": "有色ETF银华",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 11.29,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159871.html"
+  },
+  {
+    "code": "516090",
+    "name": "新能源ETF易方达",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 11.14,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516090.html"
+  },
+  {
+    "code": "515260",
+    "name": "电子ETF华宝",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 11.09,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515260.html"
+  },
+  {
+    "code": "159305",
+    "name": "储能电池ETF广发",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 10.95,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159305.html"
+  },
+  {
+    "code": "516100",
+    "name": "金融科技ETF华夏",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 10.92,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516100.html"
+  },
+  {
+    "code": "159695",
+    "name": "通信ETF嘉实",
+    "type": "指数型-股票",
+    "category": "通信与电子",
+    "scale_yi": 10.84,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159695.html"
+  },
+  {
+    "code": "159388",
+    "name": "创业板人工智能ETF国泰",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 10.73,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159388.html"
+  },
+  {
+    "code": "159839",
+    "name": "生物医药ETF汇添富",
+    "type": "指数型-股票",
+    "category": "医药与医疗",
+    "scale_yi": 10.58,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159839.html"
+  },
+  {
+    "code": "512700",
+    "name": "银行ETF南方",
+    "type": "指数型-股票",
+    "category": "金融",
+    "scale_yi": 10.48,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/512700.html"
+  },
+  {
+    "code": "515210",
+    "name": "钢铁ETF国泰",
+    "type": "指数型-股票",
+    "category": "能源与资源",
+    "scale_yi": 10.47,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/515210.html"
+  },
+  {
+    "code": "516520",
+    "name": "智能驾驶ETF华泰柏瑞",
+    "type": "指数型-股票",
+    "category": "汽车与智能驾驶",
+    "scale_yi": 10.47,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/516520.html"
+  },
+  {
+    "code": "159529",
+    "name": "标普消费ETF景顺",
+    "type": "指数型-海外股票",
+    "category": "消费",
+    "scale_yi": 10.44,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159529.html"
+  },
+  {
+    "code": "159688",
+    "name": "恒生互联网ETF华安",
+    "type": "指数型-海外股票",
+    "category": "港股行业主题",
+    "scale_yi": 10.42,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159688.html"
+  },
+  {
+    "code": "520650",
+    "name": "港股通互联网ETF南方",
+    "type": "指数型-股票",
+    "category": "港股行业主题",
+    "scale_yi": 10.41,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/520650.html"
+  },
+  {
+    "code": "159273",
+    "name": "云计算ETF汇添富",
+    "type": "指数型-股票",
+    "category": "人工智能与软件",
+    "scale_yi": 10.16,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159273.html"
+  },
+  {
+    "code": "562880",
+    "name": "电池ETF嘉实",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 10.14,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/562880.html"
+  },
+  {
+    "code": "589100",
+    "name": "科创芯片ETF国泰",
+    "type": "指数型-股票",
+    "category": "半导体与芯片",
+    "scale_yi": 10.11,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/589100.html"
+  },
+  {
+    "code": "159158",
+    "name": "电力ETF景顺",
+    "type": "指数型-股票",
+    "category": "新能源与电力设备",
+    "scale_yi": 10.05,
+    "scale_date": "2026-06-30",
+    "url": "https://fund.eastmoney.com/159158.html"
+  }
+]
