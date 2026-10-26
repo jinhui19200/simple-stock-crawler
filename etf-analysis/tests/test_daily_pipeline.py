@@ -10,7 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "collector"))
 
 import publish_to_dashboard as publisher_helpers  # noqa: E402
-from daily_pipeline import cutoff_for_session  # noqa: E402
+from daily_pipeline import (  # noqa: E402
+    cutoff_for_session,
+    has_new_complete_trading_day,
+)
 from universe_service import (  # noqa: E402
     deduplicate_candidates,
     eligible_profile,
@@ -112,6 +115,21 @@ class UniverseRulesTest(unittest.TestCase):
 
 
 class PriceValidationTest(unittest.TestCase):
+    def test_daily_update_only_runs_for_a_new_complete_trading_day(self) -> None:
+        self.assertTrue(
+            has_new_complete_trading_day(
+                "2026-10-27",
+                {"expectedTradingDate": "2026-10-26"},
+            )
+        )
+        self.assertFalse(
+            has_new_complete_trading_day(
+                "2026-10-26",
+                {"expectedTradingDate": "2026-10-26"},
+            )
+        )
+        self.assertTrue(has_new_complete_trading_day("2026-10-26", {}))
+
     def test_noon_never_includes_current_day(self) -> None:
         current = date(2026, 10, 24)
         self.assertEqual(cutoff_for_session("noon", current), date(2026, 10, 23))
