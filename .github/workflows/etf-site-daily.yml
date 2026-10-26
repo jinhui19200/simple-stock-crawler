@@ -3,9 +3,7 @@ name: ETF site daily update and deploy
 on:
   schedule:
     # GitHub Actions Cron uses UTC. China Standard Time is UTC+8.
-    - cron: "40 3 * * 1-5" # 11:40 Asia/Shanghai
-    - cron: "10 7 * * 1-5" # 15:10 Asia/Shanghai
-    - cron: "45 7 * * 1-5" # 15:45 Asia/Shanghai retry
+    - cron: "0 15 * * *" # 23:00 Asia/Shanghai; pipeline skips days without a new trading date
   workflow_dispatch:
     inputs:
       session:
@@ -14,6 +12,7 @@ on:
         default: "manual"
         type: choice
         options:
+          - daily
           - manual
           - noon
           - close
@@ -75,12 +74,10 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             session="${{ inputs.session }}"
-          elif [[ "${{ github.event.schedule }}" == "40 3 * * 1-5" ]]; then
-            session="noon"
-          elif [[ "${{ github.event.schedule }}" == "10 7 * * 1-5" ]]; then
-            session="close"
+          elif [[ "${{ github.event.schedule }}" == "0 15 * * *" ]]; then
+            session="daily"
           else
-            session="retry"
+            session="manual"
           fi
           echo "ETF_SESSION=$session" >> "$GITHUB_ENV"
           echo "Selected session: $session"
@@ -92,10 +89,23 @@ jobs:
         if: env.ETF_SESSION != 'publish'
         run: python -u collector/daily_pipeline.py --session "$ETF_SESSION"
 
+      - name: Decide whether a daily publish is needed
+        if: env.ETF_SESSION == 'daily'
+        shell: bash
+        run: |
+          if python -c 'import json; raise SystemExit(0 if json.load(open("collector/output/run_context.json")).get("noNewTradingDay") else 1)'; then
+            echo "ETF_SKIP_PUBLISH=true" >> "$GITHUB_ENV"
+            echo "No new complete trading day; keeping the current Cloudflare deployment."
+          else
+            echo "ETF_SKIP_PUBLISH=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Publish dashboard files
+        if: env.ETF_SKIP_PUBLISH != 'true'
         run: python -u collector/publish_to_dashboard.py
 
       - name: Run browser-data regression test
+        if: env.ETF_SKIP_PUBLISH != 'true'
         run: node tests/dashboard_data_check.js
 
       - name: Persist validated caches
@@ -122,6 +132,7 @@ jobs:
           retention-days: 14
 
       - name: Deploy Cloudflare Worker
+        if: env.ETF_SKIP_PUBLISH != 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
