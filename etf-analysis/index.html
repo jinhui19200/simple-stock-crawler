@@ -12,9 +12,15 @@
   <body>
     <div class="app-shell">
       <aside class="sidebar" aria-label="主导航">
-        <div class="brand" aria-label="映迹 ETF 分析">
-          <span class="brand-mark">Lin</span>
-          <span>映迹</span>
+        <div class="sidebar-head">
+          <div class="brand" aria-label="映迹 ETF 分析">
+            <span class="brand-mark">Lin</span>
+            <span>映迹</span>
+          </div>
+          <div class="update-state sidebar-update" id="update-state">
+            <span class="status-dot" id="update-dot"></span>
+            <span id="update-message">正在读取数据状态</span>
+          </div>
         </div>
         <nav class="side-nav">
           <button class="nav-item active" type="button" data-page="screener">筛选</button>
@@ -33,10 +39,6 @@
           <div>
             <p class="eyebrow">LOCAL ETF LAB</p>
             <h1 id="page-title">策略筛选</h1>
-          </div>
-          <div class="update-state" id="update-state">
-            <span class="status-dot" id="update-dot"></span>
-            <span id="update-message">正在读取数据状态</span>
           </div>
         </header>
 
