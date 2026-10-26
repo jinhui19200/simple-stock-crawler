@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the noon, close, retry, or manual ETF data pipeline."""
+"""Run the daily, noon, close, retry, or manual ETF data pipeline."""
 
 from __future__ import annotations
 
@@ -25,6 +25,11 @@ def now_china() -> datetime:
 
 def cutoff_for_session(session: str, current: date) -> date:
     return current - timedelta(days=1) if session == "noon" else current
+
+
+def has_new_complete_trading_day(expected: str, previous_context: dict) -> bool:
+    previous = str(previous_context.get("expectedTradingDate") or "")
+    return bool(expected and (not previous or expected > previous))
 
 
 def latest_cached_price_date(mappings: list[dict]) -> str:
@@ -83,7 +88,7 @@ def run_pipeline(session: str, delay: float) -> dict:
     selection_error = ""
     universe_report = {}
     should_rescreen = (
-        session in {"close", "manual"}
+        session == "manual"
         or not mappings
         or (session == "retry" and previous_context.get("selectionError"))
     )
@@ -98,10 +103,56 @@ def run_pipeline(session: str, delay: float) -> dict:
 
     expected, market_calendar_error = resolve_expected_trading_date(session, mappings, current)
     cutoff = cutoff_for_session(session, current)
+    is_new_trading_day = has_new_complete_trading_day(expected, previous_context)
+    if session == "daily" and not is_new_trading_day:
+        context = {
+            "session": session,
+            "sessionLabel": "每日更新：无新的完整交易日",
+            "startedAt": now_china().isoformat(timespec="seconds"),
+            "finishedAt": now_china().isoformat(timespec="seconds"),
+            "selectionDate": (
+                mappings[0].get("selectionDate") if mappings else ""
+            ) or current.isoformat(),
+            "cutoffDate": cutoff.isoformat(),
+            "expectedTradingDate": expected,
+            "marketCalendarError": market_calendar_error,
+            "selectionError": selection_error,
+            "selectedCount": len(mappings),
+            "attemptedCount": 0,
+            "retryCount": 0,
+            "failureCount": 0,
+            "isPartial": bool(selection_error or market_calendar_error),
+            "noNewTradingDay": True,
+            "noUpdateReason": "无新的完整交易日，保留现有缓存和线上发布",
+            "status": "no_change",
+            "universeReport": {},
+        }
+        write_json(CONTEXT, context)
+        write_json(
+            REPORT,
+            {
+                "updatedAt": now_china().isoformat(timespec="seconds"),
+                "label": session,
+                "cutoffDate": cutoff.isoformat(),
+                "results": [],
+                "completed": 0,
+                "total": 0,
+                "noNewTradingDay": True,
+            },
+        )
+        print(context["noUpdateReason"], flush=True)
+        return context
+
     selected = mappings if session != "retry" else retry_candidates(mappings, expected)
     context = {
         "session": session,
-        "sessionLabel": "午间更新（未纳入当天未收盘日K）" if session == "noon" else "收盘更新",
+        "sessionLabel": (
+            "每日收盘更新"
+            if session == "daily"
+            else "午间更新（未纳入当天未收盘日K）"
+            if session == "noon"
+            else "收盘更新"
+        ),
         "startedAt": now_china().isoformat(timespec="seconds"),
         "selectionDate": (
             mappings[0].get("selectionDate") if mappings else ""
@@ -112,6 +163,8 @@ def run_pipeline(session: str, delay: float) -> dict:
         "selectionError": selection_error,
         "selectedCount": len(mappings),
         "attemptedCount": len(selected),
+        "noNewTradingDay": False,
+        "noUpdateReason": "",
         "universeReport": {
             key: universe_report.get(key)
             for key in (
@@ -217,7 +270,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--session",
-        choices=("noon", "close", "retry", "manual"),
+        choices=("daily", "noon", "close", "retry", "manual"),
         required=True,
     )
     parser.add_argument(
