@@ -19,11 +19,10 @@ https://lin-etf-analysis.lin2194740187.workers.dev/
 - 只接受通过日期顺序、重复日期和 OHLC 关系校验的数据。
 - 官方数据不足时跳过对应 ETF，不插值、不推算、不伪造。
 
-Cloudflare 由 GitHub Actions 自动部署。计划时间为工作日：
+Cloudflare 由 GitHub Actions 自动部署。每天北京时间 23:00 触发一次；任务会先判断是否有新的完整交易日：
 
-- 11:40：午间更新，只更新到上一完整交易日，不写入当天半天日 K。
-- 15:10：收盘更新并重新筛选 ETF 名单。
-- 15:45：只补跑仍未成功或数据过旧的项目。
+- 有新的完整交易日：增量更新并发布到 Cloudflare。
+- 没有新的完整交易日：只记录无更新状态，不重复下载或重新部署。
 
 GitHub 的定时任务可能延迟数分钟。运行失败会通过 GitHub Actions 的失败通知发送邮件；网站同时显示更新时间、预期交易日、部分发布和数据过旧标记。
 
@@ -44,7 +43,7 @@ git push -u origin main
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`，当前账号为 `18538c907356e9f69066604cc9c20767`
 3. 在 GitHub 通知设置中启用 Actions 失败邮件。
-4. 打开仓库的 `Actions > ETF daily update and deploy > Run workflow`，先手动运行一次 `manual`，完成历史补齐。
+4. 打开仓库的 `Actions > ETF daily update and deploy > Run workflow`，先手动运行一次 `manual`，完成历史补齐。没有新的完整交易日时不会重复下载或重新部署。
 
 Cloudflare 令牌至少需要该账号的 Workers Scripts 编辑权限。密钥只保存在 GitHub Secrets，不进入公开仓库。
 
