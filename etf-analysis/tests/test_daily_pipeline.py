@@ -13,6 +13,7 @@ import publish_to_dashboard as publisher_helpers  # noqa: E402
 from daily_pipeline import (  # noqa: E402
     cutoff_for_session,
     has_new_complete_trading_day,
+    summarize_error,
 )
 from universe_service import (  # noqa: E402
     deduplicate_candidates,
@@ -115,6 +116,12 @@ class UniverseRulesTest(unittest.TestCase):
 
 
 class PriceValidationTest(unittest.TestCase):
+    def test_provider_error_is_summarized_without_request_url(self) -> None:
+        message = summarize_error(
+            "502 Server Error for url: https://push2delay.eastmoney.com/api/qt/clist/get?secret=hidden"
+        )
+        self.assertEqual(message, "东方财富接口返回 502 Bad Gateway")
+
     def test_daily_update_only_runs_for_a_new_complete_trading_day(self) -> None:
         self.assertTrue(
             has_new_complete_trading_day(
