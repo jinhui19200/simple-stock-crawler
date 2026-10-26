@@ -11,12 +11,15 @@ python3 publish_to_dashboard.py
 
 会话类型：
 
+- `daily`：每日 23:00 触发；只有出现新的完整交易日才更新。
 - `noon`：增量更新到上一完整交易日。
 - `close`：更新当天收盘数据并重新筛选 ETF。
 - `retry`：只重试日 K 或 PETTM 未达到预期交易日的项目。
 - `manual`：按收盘口径立即重新筛选和更新。
 
 `run_cloud_update.sh` 供 GitHub Actions 使用；`run_daily_update.sh` 保留为 macOS 本地备用入口。
+
+GitHub Actions 每天北京时间 23:00 触发一次（UTC `15:00`）。`daily` 会先确认是否出现新的完整交易日；没有新交易日时只记录“无新的完整交易日”，不重复下载、不发布 Cloudflare。
 
 ## 筛选规则
 
