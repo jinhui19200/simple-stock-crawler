@@ -53,6 +53,15 @@ function displayDateTime(value) {
   });
 }
 
+function shortStatusError(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (text.includes('502 Server Error') || text.includes('Bad Gateway')) return '东方财富接口返回 502 Bad Gateway';
+  if (text.includes('Empty reply from server') || text.includes('RemoteDisconnected')) return '东方财富接口连接被远端关闭';
+  if (text.includes('NameResolutionError') || text.includes('nodename nor servname')) return '东方财富域名解析失败';
+  return text.replace(/https?:\/\/\S+/g, '[接口地址]').slice(0, 180);
+}
+
 function renderDataStatus() {
   const message = document.getElementById('update-message');
   const dot = document.getElementById('update-dot');
@@ -84,8 +93,8 @@ function renderDataStatus() {
   ];
   if (meta.staleCount) details.push(`${meta.staleCount} 只数据过旧`);
   if (meta.freshnessVerified === false) details.push('当前为历史缓存，尚未联网确认最新交易日');
-  if (meta.selectionError) details.push(`ETF 名单沿用上次结果：${meta.selectionError}`);
-  if (meta.marketCalendarError) details.push(`交易日历读取失败：${meta.marketCalendarError}`);
+  if (meta.selectionError) details.push(`ETF 名单沿用上次结果：${shortStatusError(meta.selectionError)}`);
+  if (meta.marketCalendarError) details.push(`交易日历读取失败：${shortStatusError(meta.marketCalendarError)}`);
   banner.textContent = details.join(' · ');
   banner.className = `data-status-banner${meta.selectionError ? ' error' : hasIssue ? ' warning' : ''}`;
   banner.hidden = false;
