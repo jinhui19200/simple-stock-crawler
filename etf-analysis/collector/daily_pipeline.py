@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -21,6 +22,19 @@ CHINA = ZoneInfo("Asia/Shanghai")
 
 def now_china() -> datetime:
     return datetime.now(CHINA)
+
+
+def summarize_error(error: object) -> str:
+    text = str(error or "").strip()
+    if not text:
+        return ""
+    if "502 Server Error" in text or "Bad Gateway" in text:
+        return "东方财富接口返回 502 Bad Gateway"
+    if "Empty reply from server" in text or "RemoteDisconnected" in text:
+        return "东方财富接口连接被远端关闭"
+    if "NameResolutionError" in text or "nodename nor servname" in text:
+        return "东方财富域名解析失败"
+    return re.sub(r"https?://\S+", "[接口地址]", text)[:180]
 
 
 def cutoff_for_session(session: str, current: date) -> date:
@@ -48,7 +62,7 @@ def resolve_expected_trading_date(session: str, mappings: list[dict], current: d
         return latest_market_trading_date(cutoff), ""
     except Exception as exc:
         fallback = latest_cached_price_date(mappings)
-        return fallback, str(exc)
+        return fallback, summarize_error(exc)
 
 
 def retry_candidates(mappings: list[dict], expected: str) -> list[dict]:
@@ -96,7 +110,7 @@ def run_pipeline(session: str, delay: float) -> dict:
         try:
             mappings, universe_report = refresh_universe(selection_date=current)
         except Exception as exc:
-            selection_error = str(exc)
+            selection_error = summarize_error(exc)
             print(f"ETF清单重新筛选失败，保留上一次名单：{exc}", file=sys.stderr, flush=True)
             if not mappings:
                 raise
