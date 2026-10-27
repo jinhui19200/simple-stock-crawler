@@ -4,12 +4,15 @@ import sys
 import unittest
 from datetime import date
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "collector"))
 
 import publish_to_dashboard as publisher_helpers  # noqa: E402
+import update as updater  # noqa: E402
 from daily_pipeline import (  # noqa: E402
     cutoff_for_session,
     has_new_complete_trading_day,
@@ -172,6 +175,14 @@ class PriceValidationTest(unittest.TestCase):
         self.assertEqual(cutoff_for_session("noon", current), date(2026, 10, 23))
         self.assertEqual(cutoff_for_session("close", current), current)
 
+    def test_manual_before_close_only_uses_previous_day(self) -> None:
+        current = date(2026, 10, 27)
+        for session in ("manual", "retry", "daily", "close"):
+            self.assertEqual(
+                cutoff_for_session(session, current, 10), date(2026, 10, 26),
+            )
+            self.assertEqual(cutoff_for_session(session, current, 23), current)
+
     def test_kline_parser_uses_real_ohlc_and_sorts(self) -> None:
         payload = {
             "data": {
@@ -233,6 +244,98 @@ class PriceValidationTest(unittest.TestCase):
         progress = write_json.call_args_list[-1].args[1]
         self.assertEqual(progress["completed"], 3)
         self.assertEqual(progress["total"], 3)
+
+
+class IncrementalCacheTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.folder = TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.root = Path(self.folder.name)
+        for name, value in (
+            ("PRICE", self.root / "prices"),
+            ("PE", self.root / "pe"),
+            ("RAW_PRICE", self.root / "raw_prices"),
+            ("RAW_PE", self.root / "raw_pe"),
+        ):
+            handle = patch.object(updater, name, value)
+            handle.start()
+            self.addCleanup(handle.stop)
+        self.old_price = {
+            "date": "2026-10-23", "open": 1.0, "close": 1.1, "high": 1.2, "low": 0.9,
+        }
+
+    @patch("update.eastmoney_kline_request")
+    def test_price_requests_next_day_only_and_keeps_old_values(self, request) -> None:
+        updater.write_json(updater.PRICE / "512760.json", {"prices": [self.old_price]})
+        request.return_value = (
+            {"data": {"klines": [
+                "2026-10-23,5,5,5,5",  # A provider ignoring beg cannot overwrite old dates.
+                "2026-10-26,1.1,1.2,1.3,1.0",
+                "2026-10-27,1.2,1.3,1.4,1.1",  # Not yet closed.
+            ]}},
+            "东方财富备用接口",
+        )
+        result = updater.update_price("512760", date(2026, 10, 26))
+        params = parse_qs(request.call_args.args[0])
+        self.assertEqual(params["beg"], ["20261024"])
+        self.assertEqual(params["end"], ["20261026"])
+        self.assertEqual(params["fqt"], ["1"])
+        saved = updater.read_cache(updater.PRICE / "512760.json", "prices")
+        self.assertEqual(result, ("新增1", "2026-10-26"))
+        self.assertEqual(saved["prices"][0], self.old_price)
+        self.assertEqual(len(saved["prices"]), 2)
+
+    @patch("update.request_json")
+    def test_pe_requests_next_day_only_and_keeps_old_values(self, request) -> None:
+        old = {"date": "2026-10-23", "peTTM": 20.0}
+        updater.write_json(updater.PE / "990001.json", {"points": [old]})
+        request.return_value = {"data": [
+            {"tradeDate": "20261023", "peg": 99},
+            {"tradeDate": "20261026", "peg": 21},
+            {"tradeDate": "20261027", "peg": 22},
+        ]}
+        updater.update_pe("990001", True, date(2026, 10, 26))
+        params = parse_qs(urlsplit(request.call_args.args[0]).query)
+        self.assertEqual(params["startDate"], ["20261024"])
+        self.assertEqual(params["endDate"], ["20261026"])
+        saved = updater.read_cache(updater.PE / "990001.json", "points")
+        self.assertEqual(saved["points"], [old, {"date": "2026-10-26", "peTTM": 21.0}])
+
+    @patch("update.eastmoney_kline_request")
+    @patch("update.request_json")
+    def test_complete_caches_do_not_request_network(self, pe_request, price_request) -> None:
+        updater.write_json(updater.PRICE / "512760.json", {"prices": [self.old_price]})
+        updater.write_json(updater.PE / "990001.json", {
+            "points": [{"date": "2026-10-23", "peTTM": 20.0}],
+        })
+        updater.update_price("512760", date(2026, 10, 23))
+        updater.update_pe("990001", True, date(2026, 10, 23))
+        price_request.assert_not_called()
+        pe_request.assert_not_called()
+
+    @patch("update.eastmoney_kline_request")
+    def test_only_new_etf_fetches_initial_history(self, request) -> None:
+        request.return_value = (
+            {"data": {"klines": ["2026-10-26,1,1,1,1"]}}, "东方财富主接口",
+        )
+        updater.update_price("512760", date(2026, 10, 26))
+        self.assertEqual(parse_qs(request.call_args.args[0])["beg"], ["20200101"])
+
+    @patch("update.request_json")
+    def test_broken_existing_cache_must_not_trigger_full_download(self, request) -> None:
+        updater.write_json(updater.PRICE / "512760.json", {"wrongField": []})
+        with self.assertRaisesRegex(ValueError, "保留原文件"):
+            updater.update_price("512760", date(2026, 10, 26))
+        request.assert_not_called()
+
+    def test_failed_request_keeps_existing_file_unchanged(self) -> None:
+        path = updater.PE / "990001.json"
+        updater.write_json(path, {"points": [{"date": "2026-10-23", "peTTM": 20}]})
+        previous = path.read_bytes()
+        with patch("update.request_json", side_effect=RuntimeError("502")):
+            with self.assertRaises(RuntimeError):
+                updater.update_pe("990001", True, date(2026, 10, 26))
+        self.assertEqual(path.read_bytes(), previous)
 
 
 class PublisherHelpersTest(unittest.TestCase):

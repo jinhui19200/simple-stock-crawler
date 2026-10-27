@@ -38,6 +38,8 @@ jobs:
       ETF_REQUEST_DELAY: "5"
       ETF_BATCH_SIZE: "15"
       ETF_BATCH_PAUSE: "20"
+      ETF_HTTP_CONNECT_TIMEOUT: "5"
+      ETF_HTTP_MAX_TIME: "20"
 
     steps:
       - name: Verify deployment secrets
@@ -89,6 +91,8 @@ jobs:
 
       - name: Update ETF and PETTM caches
         if: env.ETF_SESSION != 'publish'
+        env:
+          ETF_CHECKPOINT_BATCHES: "true"
         run: python -u collector/daily_pipeline.py --session "$ETF_SESSION"
 
       - name: Decide whether a daily publish is needed

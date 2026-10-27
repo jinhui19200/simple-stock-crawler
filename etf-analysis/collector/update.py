@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import subprocess
+import sys
 import time
 import urllib.parse
 from datetime import date, datetime, timedelta
@@ -28,6 +30,8 @@ EASTMONEY = "https://push2his.eastmoney.com/api/qt/stock/kline/get"
 EASTMONEY_BACKUP = "https://push2.eastmoney.com/api/qt/stock/kline/get"
 CSI = "https://www.csindex.com.cn/csindex-home/perf/indexCsiDsPe"
 HTTP_PROXY = os.environ.get("ETF_HTTP_PROXY", "").strip()
+HTTP_CONNECT_TIMEOUT = os.environ.get("ETF_HTTP_CONNECT_TIMEOUT", "5")
+HTTP_MAX_TIME = os.environ.get("ETF_HTTP_MAX_TIME", "20")
 PRICE_START = date(2020, 1, 1)
 PE_START = date(2016, 1, 1)
 DEFAULT_BATCH_SIZE = 15
@@ -56,6 +60,19 @@ def after(day: str) -> str:
     return (date.fromisoformat(day[:10]) + timedelta(days=1)).isoformat()
 
 
+def read_cache(path: Path, key: str) -> dict:
+    """Never treat an unreadable existing cache as permission to fetch all history."""
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"已有缓存不可读，保留原文件并停止该项：{path.name}") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get(key), list) or not payload[key]:
+        raise ValueError(f"已有缓存格式无效，保留原文件并停止该项：{path.name}")
+    return payload
+
+
 def request_json(
     url: str,
     headers: dict[str, str],
@@ -75,9 +92,9 @@ def request_json(
                 "--fail-with-body",
                 "--location",
                 "--connect-timeout",
-                "15",
+                HTTP_CONNECT_TIMEOUT,
                 "--max-time",
-                "60",
+                HTTP_MAX_TIME,
             ]
             effective_proxy = HTTP_PROXY if proxy is None else proxy
             if effective_proxy:
@@ -85,11 +102,14 @@ def request_json(
             for key, value in headers.items():
                 command.extend(("--header", f"{key}: {value}"))
             command.append(url)
-            result = subprocess.run(command, text=True, capture_output=True, check=False)
+            result = subprocess.run(
+                command, text=True, capture_output=True, check=False,
+                timeout=float(HTTP_MAX_TIME) + 5,
+            )
             if result.returncode == 0:
                 return json.loads(result.stdout)
             error = result.stderr.strip() or f"curl退出码{result.returncode}"
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
             error = str(exc)
         if attempt == 3:
             break
@@ -101,10 +121,11 @@ def validate(rows: list[dict]) -> None:
     if not rows or dates != sorted(dates) or len(dates) != len(set(dates)):
         raise ValueError("日期为空、无序或重复")
     for row in rows:
+        date.fromisoformat(row["date"])
         low, opening, closing, high = (
             float(row[key]) for key in ("low", "open", "close", "high")
         )
-        if min(low, opening, closing, high) <= 0 or not (
+        if not all(math.isfinite(value) for value in (low, opening, closing, high)) or min(low, opening, closing, high) <= 0 or not (
             low <= min(opening, closing) <= max(opening, closing) <= high
         ):
             raise ValueError(f"OHLC无效：{row['date']}")
@@ -187,7 +208,7 @@ def update_price(
     cutoff_date: date,
     price_start: date = PRICE_START,
 ) -> tuple[str, str]:
-    saved = read_json(PRICE / f"{code}.json", {})
+    saved = read_cache(PRICE / f"{code}.json", "prices")
     old = saved.get("prices") if isinstance(saved.get("prices"), list) else []
     if old:
         validate(old)
@@ -195,6 +216,7 @@ def update_price(
     begin = after(latest) if latest else price_start.isoformat()
     if begin > cutoff_date.isoformat():
         return "无需更新", latest
+    print(f"{code} | 日K增量区间：{begin} 至 {cutoff_date.isoformat()}", flush=True)
 
     market = market_id(code)
     query = urllib.parse.urlencode(
@@ -249,7 +271,10 @@ def update_price(
                 f"东方财富：{primary_error}；AkShare：{fallback_error}"
             ) from fallback_error
 
-    incoming = [row for row in incoming if row["date"] <= cutoff_date.isoformat()]
+    incoming = [
+        row for row in incoming
+        if begin <= row["date"] <= cutoff_date.isoformat()
+    ]
     if not incoming:
         return "无新增交易日", latest
     fetched_at = datetime.now().astimezone().isoformat(timespec="seconds")
@@ -272,6 +297,8 @@ def update_price(
             "code": code,
             "updatedAt": fetched_at,
             "source": source,
+            "requestedStart": begin,
+            "requestedEnd": cutoff_date.isoformat(),
             "prices": complete,
         },
     )
@@ -289,8 +316,16 @@ def update_pe(
         points = saved.get("points") if isinstance(saved.get("points"), list) else []
         return "官方历史PETTM未公开", str(points[-1]["date"]) if points else ""
 
-    saved = read_json(PE / f"{index_code}.json", {})
+    saved = read_cache(PE / f"{index_code}.json", "points")
     old = saved.get("points") if isinstance(saved.get("points"), list) else []
+    if old:
+        days = [row["date"] for row in old]
+        if days != sorted(set(days)):
+            raise ValueError(f"已有PETTM缓存日期无序或重复：{index_code}")
+        for row in old:
+            date.fromisoformat(row["date"])
+            if not math.isfinite(float(row["peTTM"])) or float(row["peTTM"]) <= 0:
+                raise ValueError(f"已有PETTM数值无效：{index_code}")
     latest = str(old[-1]["date"]) if old else ""
     begin = after(latest) if latest else pe_start.isoformat()
     if begin > cutoff_date.isoformat():
@@ -309,7 +344,10 @@ def update_pe(
             "Referer": "https://www.csindex.com.cn/",
         },
     )
-    incoming = [row for row in pe_rows(raw) if row["date"] <= cutoff_date.isoformat()]
+    incoming = [
+        row for row in pe_rows(raw)
+        if begin <= row["date"] <= cutoff_date.isoformat()
+    ]
     if not incoming:
         return "官方无新增", latest
     fetched_at = datetime.now().astimezone().isoformat(timespec="seconds")
@@ -331,6 +369,8 @@ def update_pe(
             "indexCode": index_code,
             "updatedAt": fetched_at,
             "source": "中证指数官网历史估值接口",
+            "requestedStart": begin,
+            "requestedEnd": cutoff_date.isoformat(),
             "points": complete,
         },
     )
@@ -368,10 +408,12 @@ def run_update(
             code = str(item["code"])
             index_code = str(item.get("trackingIndexCode") or "")
             errors = []
+            print(f"[{position}/{len(selected)}] 开始处理 {code}", flush=True)
             try:
                 price_status, price_latest = update_price(code, cutoff_date)
             except Exception as exc:
-                price_status, price_latest = "失败", ""
+                prices = read_json(PRICE / f"{code}.json", {}).get("prices") or []
+                price_status, price_latest = "失败", prices[-1]["date"] if prices else ""
                 errors.append(f"日K：{exc}")
             try:
                 if not index_code:
@@ -423,6 +465,10 @@ def run_update(
             )
             if position < len(selected):
                 time.sleep(max(0, delay))
+        if os.environ.get("ETF_CHECKPOINT_BATCHES") == "true":
+            subprocess.run(
+                [sys.executable, str(ROOT / "cloud_checkpoint.py")], check=True,
+            )
         if batch_number < total_batches and batch_pause > 0:
             print(
                 f"第 {batch_number} 批完成，等待 {batch_pause:g} 秒后继续下一批",

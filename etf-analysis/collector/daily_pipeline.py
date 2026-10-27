@@ -48,8 +48,9 @@ def summarize_error(error: object) -> str:
     return re.sub(r"https?://\S+", "[接口地址]", text)[:180]
 
 
-def cutoff_for_session(session: str, current: date) -> date:
-    return current - timedelta(days=1) if session == "noon" else current
+def cutoff_for_session(session: str, current: date, hour: int = 23) -> date:
+    # Morning/manual retries must not store an in-progress daily candle.
+    return current - timedelta(days=1) if session == "noon" or hour < 15 else current
 
 
 def has_new_complete_trading_day(expected: str, previous_context: dict) -> bool:
@@ -67,13 +68,18 @@ def latest_cached_price_date(mappings: list[dict]) -> str:
     return max(dates, default="")
 
 
-def resolve_expected_trading_date(session: str, mappings: list[dict], current: date) -> tuple[str, str]:
-    cutoff = cutoff_for_session(session, current)
+def resolve_expected_trading_date(
+    session: str, mappings: list[dict], current: date, hour: int = 23,
+) -> tuple[str, str]:
+    cutoff = cutoff_for_session(session, current, hour)
     try:
-        return latest_market_trading_date(cutoff), ""
+        expected = latest_market_trading_date(cutoff)
+        if not expected or expected > cutoff.isoformat():
+            raise ValueError("交易日接口返回了超出收盘截止日的日期")
+        return expected, ""
     except Exception as exc:
         fallback = latest_cached_price_date(mappings)
-        return fallback, summarize_error(exc)
+        return fallback if fallback <= cutoff.isoformat() else "", summarize_error(exc)
 
 
 def retry_candidates(mappings: list[dict], expected: str) -> list[dict]:
@@ -110,7 +116,8 @@ def run_pipeline(
     batch_size: int = DEFAULT_BATCH_SIZE,
     batch_pause: float = DEFAULT_BATCH_PAUSE,
 ) -> dict:
-    current = now_china().date()
+    clock = now_china()
+    current = clock.date()
     mappings = read_json(MAPPING, [])
     if not isinstance(mappings, list):
         mappings = []
@@ -132,10 +139,14 @@ def run_pipeline(
             if not mappings:
                 raise
 
-    expected, market_calendar_error = resolve_expected_trading_date(session, mappings, current)
-    cutoff = cutoff_for_session(session, current)
+    expected, market_calendar_error = resolve_expected_trading_date(
+        session, mappings, current, clock.hour,
+    )
+    cutoff = cutoff_for_session(session, current, clock.hour)
+    if expected and not market_calendar_error:
+        cutoff = date.fromisoformat(expected)
     is_new_trading_day = has_new_complete_trading_day(expected, previous_context)
-    if session == "daily" and not is_new_trading_day:
+    if session == "daily" and not market_calendar_error and not is_new_trading_day:
         context = {
             "session": session,
             "sessionLabel": "每日更新：无新的完整交易日",
@@ -238,8 +249,8 @@ def run_pipeline(
             "finishedAt": now_china().isoformat(timespec="seconds"),
             "failureCount": len(failures),
             "retryCount": len(selected),
-            "isPartial": bool(failures or selection_error),
-            "status": "partial" if failures or selection_error else "success",
+            "isPartial": bool(failures or selection_error or market_calendar_error),
+            "status": "partial" if failures or selection_error or market_calendar_error else "success",
         }
     )
     write_json(CONTEXT, context)
