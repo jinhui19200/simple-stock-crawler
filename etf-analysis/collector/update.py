@@ -22,10 +22,16 @@ RAW_PRICE = OUT / "raw" / "etf_price"
 RAW_PE = OUT / "raw" / "index_pe"
 REPORT = OUT / "update_report.json"
 EASTMONEY = "https://push2his.eastmoney.com/api/qt/stock/kline/get"
+# The primary and backup endpoints are both Eastmoney data services.  The
+# backup uses the non-history gateway, which is useful when the history host
+# is temporarily returning 502/empty responses from a CI runner.
+EASTMONEY_BACKUP = "https://push2.eastmoney.com/api/qt/stock/kline/get"
 CSI = "https://www.csindex.com.cn/csindex-home/perf/indexCsiDsPe"
 HTTP_PROXY = os.environ.get("ETF_HTTP_PROXY", "").strip()
 PRICE_START = date(2020, 1, 1)
 PE_START = date(2016, 1, 1)
+DEFAULT_BATCH_SIZE = 15
+DEFAULT_BATCH_PAUSE = 20.0
 
 
 def read_json(path: Path, fallback):
@@ -124,6 +130,33 @@ def kline_rows(payload: dict) -> list[dict]:
     return result
 
 
+def eastmoney_kline_request(
+    query: str,
+    headers: dict[str, str],
+) -> tuple[dict, str]:
+    """Read K-lines from Eastmoney, then its alternate gateway.
+
+    AkShare is deliberately not used here: it is a parser/client for the
+    same Eastmoney service and is handled separately by ``update_price``.
+    Returning the endpoint label lets the cache record which official
+    Eastmoney gateway actually supplied the data.
+    """
+    errors: list[str] = []
+    endpoints = (
+        (EASTMONEY, "东方财富主接口"),
+        (EASTMONEY_BACKUP, "东方财富备用接口"),
+    )
+    for endpoint, label in endpoints:
+        try:
+            payload = request_json(endpoint + "?" + query, headers)
+            if not kline_rows(payload):
+                raise ValueError("未返回有效日K记录")
+            return payload, label
+        except Exception as exc:
+            errors.append(f"{label}：{exc}")
+    raise RuntimeError("；".join(errors))
+
+
 def pe_rows(payload: dict) -> list[dict]:
     rows = {}
     for item in payload.get("data") or []:
@@ -178,8 +211,8 @@ def update_price(
     )
     source = "东方财富前复权日K（fqt=1）"
     try:
-        raw = request_json(
-            EASTMONEY + "?" + query,
+        raw, source_label = eastmoney_kline_request(
+            query,
             {
                 "User-Agent": "Mozilla/5.0",
                 "Referer": (
@@ -189,6 +222,7 @@ def update_price(
             },
         )
         incoming = kline_rows(raw)
+        source = f"{source_label}前复权日K（fqt=1）"
     except Exception as primary_error:
         try:
             import akshare as ak
@@ -309,69 +343,103 @@ def run_update(
     cutoff_date: date,
     delay: float = 5,
     label: str = "manual",
+    batch_size: int = DEFAULT_BATCH_SIZE,
+    batch_pause: float = DEFAULT_BATCH_PAUSE,
 ) -> dict:
     selected = list(selected)
+    if batch_size <= 0:
+        raise ValueError("batch_size 必须大于 0")
+    batches = [
+        selected[start : start + batch_size]
+        for start in range(0, len(selected), batch_size)
+    ]
     pe_status: dict[str, tuple[str, str]] = {}
     results = []
-    for position, item in enumerate(selected, 1):
-        code = str(item["code"])
-        index_code = str(item.get("trackingIndexCode") or "")
-        errors = []
-        try:
-            price_status, price_latest = update_price(code, cutoff_date)
-        except Exception as exc:
-            price_status, price_latest = "失败", ""
-            errors.append(f"日K：{exc}")
-        try:
-            if not index_code:
-                raise ValueError("缺少跟踪指数代码")
-            if index_code not in pe_status:
-                pe_status[index_code] = update_pe(
-                    index_code,
-                    bool(item.get("trackingPeAvailable")),
-                    cutoff_date,
-                )
-            pe_result, pe_latest = pe_status[index_code]
-        except Exception as exc:
-            pe_result, pe_latest = "失败", ""
-            errors.append(f"PETTM：{exc}")
-
-        row = {
-            "code": code,
-            "name": item.get("name") or code,
-            "trackingIndexCode": index_code,
-            "priceStatus": price_status,
-            "peStatus": pe_result,
-            "latestDate": price_latest,
-            "latestPeDate": pe_latest,
-            "error": "；".join(errors),
-        }
-        results.append(row)
+    total_batches = len(batches)
+    for batch_number, batch in enumerate(batches, 1):
         print(
-            f"[{position}/{len(selected)}] {code} | 日K：{price_status} | "
-            f"PETTM：{pe_result} | 最新：{price_latest or '-'} | "
-            f"{row['error'] or '-'}",
+            f"开始第 {batch_number}/{total_batches} 批更新："
+            f"{len(batch)} 只 ETF（批大小 {batch_size}）",
             flush=True,
         )
-        write_json(
-            REPORT,
-            {
-                "updatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
-                "label": label,
-                "cutoffDate": cutoff_date.isoformat(),
-                "results": results,
-                "completed": position,
-                "total": len(selected),
-            },
-        )
-        if position < len(selected):
-            time.sleep(max(0, delay))
+        batch_start = (batch_number - 1) * batch_size
+        for offset, item in enumerate(batch):
+            position = batch_start + offset + 1
+            code = str(item["code"])
+            index_code = str(item.get("trackingIndexCode") or "")
+            errors = []
+            try:
+                price_status, price_latest = update_price(code, cutoff_date)
+            except Exception as exc:
+                price_status, price_latest = "失败", ""
+                errors.append(f"日K：{exc}")
+            try:
+                if not index_code:
+                    raise ValueError("缺少跟踪指数代码")
+                if index_code not in pe_status:
+                    pe_status[index_code] = update_pe(
+                        index_code,
+                        bool(item.get("trackingPeAvailable")),
+                        cutoff_date,
+                    )
+                pe_result, pe_latest = pe_status[index_code]
+            except Exception as exc:
+                pe_result, pe_latest = "失败", ""
+                errors.append(f"PETTM：{exc}")
+
+            row = {
+                "code": code,
+                "name": item.get("name") or code,
+                "trackingIndexCode": index_code,
+                "priceStatus": price_status,
+                "peStatus": pe_result,
+                "latestDate": price_latest,
+                "latestPeDate": pe_latest,
+                "error": "；".join(errors),
+                "batch": batch_number,
+                "batchCount": total_batches,
+            }
+            results.append(row)
+            print(
+                f"[{position}/{len(selected)} | 批 {batch_number}/{total_batches}] "
+                f"{code} | 日K：{price_status} | PETTM：{pe_result} | "
+                f"最新：{price_latest or '-'} | {row['error'] or '-'}",
+                flush=True,
+            )
+            write_json(
+                REPORT,
+                {
+                    "updatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
+                    "label": label,
+                    "cutoffDate": cutoff_date.isoformat(),
+                    "results": results,
+                    "completed": position,
+                    "total": len(selected),
+                    "batchSize": batch_size,
+                    "batchCount": total_batches,
+                    "completedBatches": batch_number - 1
+                    + (1 if offset == len(batch) - 1 else 0),
+                },
+            )
+            if position < len(selected):
+                time.sleep(max(0, delay))
+        if batch_number < total_batches and batch_pause > 0:
+            print(
+                f"第 {batch_number} 批完成，等待 {batch_pause:g} 秒后继续下一批",
+                flush=True,
+            )
+            time.sleep(batch_pause)
 
     report = {
         "updatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
         "label": label,
         "cutoffDate": cutoff_date.isoformat(),
         "results": results,
+        "completed": len(results),
+        "total": len(selected),
+        "batchSize": batch_size,
+        "batchCount": total_batches,
+        "completedBatches": total_batches,
     }
     write_json(REPORT, report)
     return report
@@ -381,6 +449,18 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--code", action="append", help="仅更新指定ETF代码，可重复使用")
     parser.add_argument("--delay", type=float, default=5, help="每只ETF之间的等待秒数")
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=int(os.environ.get("ETF_BATCH_SIZE", str(DEFAULT_BATCH_SIZE))),
+        help="每批处理的ETF数量，默认15",
+    )
+    parser.add_argument(
+        "--batch-pause",
+        type=float,
+        default=float(os.environ.get("ETF_BATCH_PAUSE", str(DEFAULT_BATCH_PAUSE))),
+        help="批次之间的等待秒数，默认20",
+    )
     parser.add_argument(
         "--cutoff-date",
         default=date.today().isoformat(),
@@ -399,6 +479,8 @@ def main() -> None:
         selected,
         cutoff_date=date.fromisoformat(args.cutoff_date),
         delay=args.delay,
+        batch_size=args.batch_size,
+        batch_pause=args.batch_pause,
     )
 
 

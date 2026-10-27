@@ -19,6 +19,16 @@ python3 publish_to_dashboard.py
 
 `run_cloud_update.sh` 供 GitHub Actions 使用；`run_daily_update.sh` 保留为 macOS 本地备用入口。
 
+## 请求保护与备用入口
+
+- ETF 日 K 默认每批处理 15 只，批次之间等待 20 秒；每只 ETF 之间仍等待 5 秒。
+- 批次大小和批次间隔可通过 `ETF_BATCH_SIZE`、`ETF_BATCH_PAUSE` 或命令行
+  `--batch-size`、`--batch-pause` 调整，建议保持在 10–20 只/批。
+- 日 K 请求顺序为东方财富主接口、东方财富备用接口，二者都失败后才使用
+  `AkShare东方财富` 解析。两条入口均属于东方财富数据服务，不改变主数据源要求。
+- `output/update_report.json` 按每只 ETF 即时写入批次、完成数和失败原因；任务中断后
+  重新运行不会重下已经完整缓存的日期，只会继续请求缓存缺少的日期。
+
 GitHub Actions 每天北京时间 23:00 触发一次（UTC `15:00`）。`daily` 会先确认是否出现新的完整交易日；没有新交易日时只记录“无新的完整交易日”，不重复下载、不发布 Cloudflare。
 
 ## 筛选规则

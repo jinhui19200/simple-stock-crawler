@@ -22,7 +22,15 @@ from universe_service import (  # noqa: E402
     is_stock_etf,
     select_universe,
 )
-from update import kline_rows, merged, validate  # noqa: E402
+from update import (
+    EASTMONEY,
+    EASTMONEY_BACKUP,
+    eastmoney_kline_request,
+    kline_rows,
+    merged,
+    run_update,
+    validate,
+)  # noqa: E402
 
 
 class UniverseRulesTest(unittest.TestCase):
@@ -116,6 +124,28 @@ class UniverseRulesTest(unittest.TestCase):
 
 
 class PriceValidationTest(unittest.TestCase):
+    @patch("update.request_json")
+    def test_eastmoney_backup_gateway_is_used_after_primary_failure(
+        self, request_json
+    ) -> None:
+        payload = {
+            "data": {
+                "klines": ["2026-10-24,1.0,1.1,1.2,0.9"],
+            }
+        }
+        request_json.side_effect = [RuntimeError("502 Bad Gateway"), payload]
+        result, source = eastmoney_kline_request(
+            "secid=1.512760&klt=101",
+            {"User-Agent": "test"},
+        )
+        self.assertEqual(result, payload)
+        self.assertEqual(source, "东方财富备用接口")
+        self.assertEqual(request_json.call_count, 2)
+        self.assertTrue(request_json.call_args_list[0].args[0].startswith(EASTMONEY))
+        self.assertTrue(
+            request_json.call_args_list[1].args[0].startswith(EASTMONEY_BACKUP)
+        )
+
     def test_provider_error_is_summarized_without_request_url(self) -> None:
         message = summarize_error(
             "502 Server Error for url: https://push2delay.eastmoney.com/api/qt/clist/get?secret=hidden"
@@ -175,6 +205,34 @@ class PriceValidationTest(unittest.TestCase):
         result = merged(old, new)
         self.assertEqual([row["date"] for row in result], ["2026-10-23", "2026-10-24"])
         self.assertEqual(result[0]["close"], 1.1)
+
+    @patch("update.time.sleep")
+    @patch("update.write_json")
+    @patch("update.update_pe", return_value=("无需更新", "2026-10-24"))
+    @patch("update.update_price", return_value=("无需更新", "2026-10-24"))
+    def test_update_records_batches_and_progress(
+        self, _price, _pe, write_json, sleep
+    ) -> None:
+        selected = [
+            {"code": "512760", "name": "芯片ETF", "trackingIndexCode": "A"},
+            {"code": "513090", "name": "港股ETF", "trackingIndexCode": "B"},
+            {"code": "159796", "name": "消费ETF", "trackingIndexCode": "C"},
+        ]
+        report = run_update(
+            selected,
+            cutoff_date=date(2026, 10, 24),
+            delay=0,
+            batch_size=2,
+            batch_pause=20,
+        )
+        self.assertEqual(report["batchSize"], 2)
+        self.assertEqual(report["batchCount"], 2)
+        self.assertEqual(report["completed"], 3)
+        self.assertEqual([row["batch"] for row in report["results"]], [1, 1, 2])
+        self.assertIn(20, [call.args[0] for call in sleep.call_args_list])
+        progress = write_json.call_args_list[-1].args[1]
+        self.assertEqual(progress["completed"], 3)
+        self.assertEqual(progress["total"], 3)
 
 
 class PublisherHelpersTest(unittest.TestCase):

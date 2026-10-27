@@ -11,7 +11,15 @@ from pathlib import Path
 from typing import Iterable
 from urllib.parse import urlencode
 
-from update import PE, PRICE, read_json, request_json, update_pe, write_json
+from update import (
+    PE,
+    PRICE,
+    eastmoney_kline_request,
+    read_json,
+    request_json,
+    update_pe,
+    write_json,
+)
 
 ROOT = Path(__file__).resolve().parent
 MAPPING = ROOT / "etf_mapping.json"
@@ -118,8 +126,8 @@ def latest_market_trading_date(cutoff: date) -> str:
             "end": cutoff.strftime("%Y%m%d"),
         }
     )
-    payload = request_json(
-        "https://push2his.eastmoney.com/api/qt/stock/kline/get?" + query,
+    payload, _source = eastmoney_kline_request(
+        query,
         {
             "User-Agent": "Mozilla/5.0",
             "Referer": "https://quote.eastmoney.com/sh000001.html",

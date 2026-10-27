@@ -13,7 +13,18 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from universe_service import latest_market_trading_date, refresh_universe
-from update import MAPPING, OUT, PE, PRICE, REPORT, read_json, run_update, write_json
+from update import (
+    DEFAULT_BATCH_PAUSE,
+    DEFAULT_BATCH_SIZE,
+    MAPPING,
+    OUT,
+    PE,
+    PRICE,
+    REPORT,
+    read_json,
+    run_update,
+    write_json,
+)
 
 ROOT = Path(__file__).resolve().parent
 CONTEXT = OUT / "run_context.json"
@@ -92,7 +103,13 @@ def retry_candidates(mappings: list[dict], expected: str) -> list[dict]:
     return selected
 
 
-def run_pipeline(session: str, delay: float) -> dict:
+def run_pipeline(
+    session: str,
+    delay: float,
+    *,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+    batch_pause: float = DEFAULT_BATCH_PAUSE,
+) -> dict:
     current = now_china().date()
     mappings = read_json(MAPPING, [])
     if not isinstance(mappings, list):
@@ -177,6 +194,8 @@ def run_pipeline(session: str, delay: float) -> dict:
         "selectionError": selection_error,
         "selectedCount": len(mappings),
         "attemptedCount": len(selected),
+        "batchSize": batch_size,
+        "batchPause": batch_pause,
         "noNewTradingDay": False,
         "noUpdateReason": "",
         "universeReport": {
@@ -201,6 +220,8 @@ def run_pipeline(session: str, delay: float) -> dict:
             cutoff_date=cutoff,
             delay=delay,
             label=session,
+            batch_size=batch_size,
+            batch_pause=batch_pause,
         )
     else:
         report = {
@@ -292,11 +313,28 @@ def main() -> None:
         type=float,
         default=float(os.environ.get("ETF_REQUEST_DELAY", "5")),
     )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=int(os.environ.get("ETF_BATCH_SIZE", str(DEFAULT_BATCH_SIZE))),
+        help="每批处理的ETF数量，默认15",
+    )
+    parser.add_argument(
+        "--batch-pause",
+        type=float,
+        default=float(os.environ.get("ETF_BATCH_PAUSE", str(DEFAULT_BATCH_PAUSE))),
+        help="批次之间的等待秒数，默认20",
+    )
     parser.add_argument("--check-only", action="store_true")
     args = parser.parse_args()
     if args.check_only:
         raise SystemExit(check_freshness())
-    context = run_pipeline(args.session, args.delay)
+    context = run_pipeline(
+        args.session,
+        args.delay,
+        batch_size=args.batch_size,
+        batch_pause=args.batch_pause,
+    )
     print(json.dumps(context, ensure_ascii=False, indent=2), flush=True)
 
 
