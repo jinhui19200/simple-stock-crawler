@@ -18,7 +18,8 @@ def checkpoint() -> None:
 
     git("config", "user.name", "github-actions[bot]")
     git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
-    git("add", "-A", "collector/output/etf_price", "collector/output/index_pe",
+    git("add", "-A", "collector/etf_mapping.json", "collector/candidate_catalog.json",
+        "collector/output/etf_price", "collector/output/index_pe",
         "collector/output/update_report.json", "collector/output/run_context.json")
     changed = git("diff", "--cached", "--quiet", check=False)
     if changed.returncode == 1:

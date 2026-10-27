@@ -13,7 +13,7 @@ python3 publish_to_dashboard.py
 
 - `daily`：每日 23:00 触发；只有出现新的完整交易日才更新。
 - `noon`：增量更新到上一完整交易日。
-- `close`：更新当天收盘数据并重新筛选 ETF。
+- `close`：沿用现有名单，增量更新已收盘的数据。
 - `retry`：只重试日 K 或 PETTM 未达到预期交易日的项目。
 - `manual`：按收盘口径立即重新筛选和更新。
 
