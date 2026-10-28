@@ -188,6 +188,7 @@ def run_pipeline(
     selected = mappings if session != "retry" else retry_candidates(mappings, expected)
     context = {
         "session": session,
+        "runAttempt": os.environ.get("ETF_UPDATE_ATTEMPT", ""),
         "sessionLabel": (
             "每日收盘更新"
             if session == "daily"

@@ -36,6 +36,44 @@ PRICE_START = date(2020, 1, 1)
 PE_START = date(2016, 1, 1)
 DEFAULT_BATCH_SIZE = 15
 DEFAULT_BATCH_PAUSE = 20.0
+PRICE_SOURCE_FAILURES: dict[str, dict] = {}
+
+
+def call_price_source(name: str, request):
+    """Pause repeatedly failing gateways within this run instead of hammering them."""
+    enabled = os.environ.get("ETF_CIRCUIT_BREAKER") == "true"
+    state = PRICE_SOURCE_FAILURES.setdefault(name, {"failures": 0, "retryAt": 0.0})
+    if enabled and time.monotonic() < state["retryAt"]:
+        raise RuntimeError(f"{name}连续失败，暂缓该来源；旧缓存保留。上次错误：{state.get('error', '')}")
+    try:
+        result = request()
+    except Exception as exc:
+        if enabled:
+            state["failures"] += 1
+            state["error"] = str(exc)[:300]
+            if state["failures"] >= 2:
+                state["retryAt"] = time.monotonic() + 900
+        raise
+    state.update(failures=0, retryAt=0.0)
+    return result
+
+
+def akshare_kline_request(code: str, begin: str, end: str) -> dict:
+    """Bound the whole optional client call, including import and hidden retries."""
+    limit = float(os.environ.get("ETF_AKSHARE_MAX_TIME", "30"))
+    try:
+        response = subprocess.run(
+            [sys.executable, str(ROOT / "akshare_price_worker.py"), code, begin, end],
+            capture_output=True, text=True, check=False, timeout=limit,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"AkShare超过{limit:g}秒，已终止该请求，保留旧缓存") from exc
+    if response.returncode:
+        raise RuntimeError(response.stderr.strip()[-1000:] or f"AkShare退出码{response.returncode}")
+    payload = json.loads(response.stdout)
+    if not kline_rows(payload):
+        raise ValueError("AkShare未返回有效日K记录")
+    return payload
 
 
 def read_json(path: Path, fallback):
@@ -169,9 +207,13 @@ def eastmoney_kline_request(
     )
     for endpoint, label in endpoints:
         try:
-            payload = request_json(endpoint + "?" + query, headers)
-            if not kline_rows(payload):
-                raise ValueError("未返回有效日K记录")
+            def read_endpoint():
+                payload = request_json(endpoint + "?" + query, headers)
+                if not kline_rows(payload):
+                    raise ValueError("未返回有效日K记录")
+                return payload
+
+            payload = call_price_source(label, read_endpoint)
             return payload, label
         except Exception as exc:
             errors.append(f"{label}：{exc}")
@@ -247,24 +289,10 @@ def update_price(
         source = f"{source_label}前复权日K（fqt=1）"
     except Exception as primary_error:
         try:
-            import akshare as ak
-
-            frame = ak.fund_etf_hist_em(
-                symbol=code,
-                period="daily",
-                start_date=begin.replace("-", ""),
-                end_date=cutoff_date.strftime("%Y%m%d"),
-                adjust="qfq",
+            raw = call_price_source(
+                "AkShare东方财富",
+                lambda: akshare_kline_request(code, begin, cutoff_date.isoformat()),
             )
-            raw = {
-                "data": {
-                    "klines": [
-                        f"{str(row['日期'])[:10]},{row['开盘']},{row['收盘']},"
-                        f"{row['最高']},{row['最低']}"
-                        for _, row in frame.iterrows()
-                    ]
-                }
-            }
             incoming, source = kline_rows(raw), "AkShare东方财富"
         except Exception as fallback_error:
             raise RuntimeError(
@@ -387,6 +415,7 @@ def run_update(
     batch_pause: float = DEFAULT_BATCH_PAUSE,
 ) -> dict:
     selected = list(selected)
+    PRICE_SOURCE_FAILURES.clear()
     if batch_size <= 0:
         raise ValueError("batch_size 必须大于 0")
     batches = [
@@ -396,6 +425,15 @@ def run_update(
     pe_status: dict[str, tuple[str, str]] = {}
     results = []
     total_batches = len(batches)
+    # Replace the previous run's report before the first potentially slow request.
+    write_json(REPORT, {
+        "updatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "label": label,
+        "cutoffDate": cutoff_date.isoformat(),
+        "results": [], "completed": 0, "total": len(selected),
+        "batchSize": batch_size, "batchCount": total_batches,
+        "completedBatches": 0,
+    })
     for batch_number, batch in enumerate(batches, 1):
         print(
             f"开始第 {batch_number}/{total_batches} 批更新："

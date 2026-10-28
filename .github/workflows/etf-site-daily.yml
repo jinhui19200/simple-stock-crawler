@@ -40,6 +40,9 @@ jobs:
       ETF_BATCH_PAUSE: "20"
       ETF_HTTP_CONNECT_TIMEOUT: "5"
       ETF_HTTP_MAX_TIME: "20"
+      ETF_AKSHARE_MAX_TIME: "30"
+      ETF_CIRCUIT_BREAKER: "true"
+      ETF_UPDATE_ATTEMPT: ${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
       - name: Verify deployment secrets
@@ -90,10 +93,17 @@ jobs:
         run: python -m unittest discover -s tests -p "test_*.py"
 
       - name: Update ETF and PETTM caches
+        id: cache_update
+        timeout-minutes: 45
+        continue-on-error: true
         if: env.ETF_SESSION != 'publish'
         env:
           ETF_CHECKPOINT_BATCHES: "true"
         run: python -u collector/daily_pipeline.py --session "$ETF_SESSION"
+
+      - name: Mark interrupted update as partial before publishing
+        if: steps.cache_update.outcome == 'failure'
+        run: python collector/finalize_interrupted_update.py
 
       - name: Decide whether a daily publish is needed
         if: env.ETF_SESSION == 'daily'
@@ -144,6 +154,12 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx --yes wrangler@4.136.1 deploy --config wrangler.jsonc
 
-      - name: Fail after retry when data remains stale
-        if: env.ETF_SESSION == 'retry' || env.ETF_SESSION == 'manual'
+      - name: Fail when requested data remains stale
+        if: env.ETF_SKIP_PUBLISH != 'true' && env.ETF_SESSION != 'publish'
         run: python -u collector/daily_pipeline.py --session "$ETF_SESSION" --check-only
+
+      - name: Report interrupted update after publishing saved caches
+        if: steps.cache_update.outcome == 'failure'
+        run: |
+          echo "::error::The cache update failed or exceeded 45 minutes. Valid saved caches were published; missing data remains marked stale."
+          exit 1
