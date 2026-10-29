@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="本地 ETF 行业估值与策略回测工具" />
+    <title>映迹 ETF 分析</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="nav.css" />
+    <link rel="stylesheet" href="strategy.css?v=20261024-2" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="sidebar-head">
+          <div class="brand" aria-label="映迹 ETF 分析">
+            <span class="brand-mark">Lin</span>
+            <span>映迹</span>
+          </div>
+          <div class="update-state sidebar-update" id="update-state">
+            <span class="status-dot" id="update-dot"></span>
+            <span id="update-message">正在读取数据状态</span>
+          </div>
+        </div>
+        <nav class="side-nav">
+          <button class="nav-item active" type="button" data-page="screener">筛选</button>
+          <button class="nav-item" type="button" data-page="detail">详情</button>
+          <button class="nav-item" type="button" data-page="backtest">回测</button>
+          <button class="nav-item" type="button" data-page="profile">个人</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <span class="status-dot"></span>
+          <span>云端数据</span>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">LOCAL ETF LAB</p>
+            <h1 id="page-title">策略筛选</h1>
+          </div>
+        </header>
+
+        <section class="page active" id="screener-page" data-page-content="screener">
+          <div class="page-intro">
+            <div>
+              <h2>寻找行业估值新低机会</h2>
+              <p>按统一策略回测行业 ETF。每个行业仅保留一只规模较大且历史数据完整的 ETF。</p>
+            </div>
+            <div class="intro-stat"><strong id="eligible-count">68</strong><span>可用行业 ETF</span></div>
+          </div>
+
+          <div class="data-status-banner" id="data-status-banner" role="status" hidden></div>
+
+          <section class="rule-card">
+            <div class="rule-card-heading">
+              <div>
+                <p class="eyebrow">当前策略</p>
+                <h3>买入与卖出条件</h3>
+              </div>
+              <div class="rule-actions"><span class="run-state" id="screen-run-state">等待执行</span><button class="primary-button" type="button" id="run-screen">执行条件 <span>→</span></button></div>
+            </div>
+            <div class="strategy-editor compact-editor" data-strategy-editor="screener"></div>
+            <div class="rule-summary" id="screener-rule-summary"></div>
+          </section>
+
+          <section class="table-section">
+            <div class="section-heading">
+              <div>
+                <h3>ETF 筛选结果</h3>
+                <p>按策略累计收益排序</p>
+              </div>
+              <label class="search-box"><span>⌕</span><input id="etf-search" type="search" placeholder="搜索名称或代码" /></label>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>序号</th><th>ETF</th><th>所属行业</th><th>策略收益</th><th>操作数</th><th>累计持仓</th><th></th></tr></thead>
+                <tbody id="etf-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="page" id="detail-page" data-page-content="detail">
+          <div class="detail-head">
+            <button class="back-link" type="button" data-page="screener">← 返回筛选</button>
+            <div class="detail-title-row">
+              <div>
+                <p class="eyebrow" id="detail-industry">半导体</p>
+                <h2 id="detail-name">芯片 ETF <span id="detail-code">512760</span></h2>
+                <p id="detail-index">追踪指数：中证芯片产业指数</p>
+              </div>
+              <div class="quote-block"><span>各份资金累计策略收益</span><strong id="detail-return">--</strong><small id="detail-latest-price">最新收盘价 --</small><small id="detail-period">应用条件后汇总每份资金收益</small></div>
+            </div>
+          </div>
+          <section class="detail-metrics single-metric" id="detail-metrics">
+            <article class="metric-card"><span>成交价历史分位</span><strong id="detail-percentile">暂无数据</strong></article>
+          </section>
+
+          <section class="chart-card combined-chart-card">
+            <div class="section-heading chart-heading">
+              <div><h3>ETF 日 K 与行业估值</h3><p id="ohlc-source-state">正在读取本地 OHLC 数据；滚动鼠标滚轮可缩放</p></div>
+              <div class="chart-legend"><span><i class="legend-box red"></i>上涨</span><span><i class="legend-box green"></i>下跌</span><span><i class="legend-line pe-line"></i>TTM 市盈率</span><span><i class="legend-line low-line"></i>动态最低线</span><span><i class="legend-line amber"></i>20 日均线</span><span><i class="legend-line purple"></i>30 日均线</span></div>
+            </div>
+            <div class="chart-wrap combined-chart" id="market-chart" aria-label="ETF 日 K 与行业历史 TTM 市盈率图"></div>
+            <div class="chart-note">统一日历轴：行业PETTM从2016年开始，ETF日K从2020年开始；绿色标记表示PETTM刷新历史最低值。</div>
+          </section>
+
+          <section class="rule-card detail-strategy-card">
+            <div class="rule-card-heading"><div><p class="eyebrow">本 ETF 策略</p><h3>买入与卖出条件</h3></div><div class="rule-actions"><span class="run-state" id="detail-run-state">等待执行</span><button class="primary-button" type="button" id="apply-detail-strategy">应用条件 <span>→</span></button></div></div>
+            <div class="strategy-editor compact-editor" data-strategy-editor="detail"></div>
+            <div class="rule-summary" id="detail-rule-summary"></div>
+          </section>
+          <section class="records-grid">
+            <article class="records-card"><div class="section-heading"><div><h3>操作记录</h3><p id="detail-record-rule">按当前策略计算</p></div><span class="count-pill" id="trade-count">12 笔</span></div><div class="record-list" id="trade-records"></div></article>
+          </section>
+        </section>
+
+        <section class="page" id="backtest-page" data-page-content="backtest">
+          <div class="page-intro"><div><h2>策略回测</h2><p>以历史价格和行业 TTM 市盈率验证买卖规则。结果仅用于研究，不构成投资建议。</p></div></div>
+          <div class="backtest-grid">
+            <section class="settings-card">
+              <div class="section-heading"><div><h3>初始条件</h3><p>修改后执行回测</p></div></div>
+              <label class="field-label">初始资金<input id="initial-capital" type="number" min="10000" step="10000" value="100000" /><span>元</span></label>
+              <label class="field-label">资金份数<input id="capital-parts" type="number" min="1" max="100" step="1" value="5" /><span>份</span></label>
+              <div class="strategy-editor" data-strategy-editor="backtest"></div>
+              <button class="primary-button full" type="button" id="run-backtest">执行回测 <span>→</span></button>
+            </section>
+
+            <div class="backtest-results">
+              <section class="result-stats" id="backtest-stats"></section>
+              <section class="chart-card return-card"><div class="section-heading"><div><h3>收益曲线</h3><p>按动态每份资金计算的账户净值</p></div><div class="chart-legend"><span><i class="legend-line blue"></i>策略净值</span></div></div><div class="chart-wrap compact" id="return-chart"></div></section>
+              <section class="monthly-card"><div class="section-heading"><div><h3>持仓明细</h3><p>点击任意月份列查看当期操作</p></div></div><div class="holding-table-wrap" id="holding-summary"></div></section>
+              <section class="monthly-card operation-card"><div class="section-heading"><div><h3>持仓操作列表</h3><p id="holding-operation-period">请选择持仓明细中的月份</p></div><span class="count-pill" id="holding-operation-count">0 笔</span></div><div class="holding-operation-list" id="holding-operation-list"></div></section>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="profile-page" data-page-content="profile">
+          <section class="rule-card optional-etf-card">
+            <div class="section-heading">
+              <div><p class="eyebrow">个人关注</p><h2>可选 ETF</h2><p>最近一年触发过买入或加仓条件的记录，按触发时间从近到远排列。</p></div>
+              <button class="primary-button" type="button" id="refresh-optional-etfs">刷新列表</button>
+            </div>
+            <div class="profile-buy-editor">
+              <div class="section-heading"><div><h3>个人中心独立买入条件</h3><p>不受筛选页条件修改影响，只计算买入信号。</p></div></div>
+              <div class="profile-buy-fields">
+                <label>ETF低价附近<input id="profile-price-near-low" type="number" min="0" max="100" step="0.5" value="10" />%</label>
+                <label>PE低估值附近<input id="profile-pe-near-low" type="number" min="0" max="100" step="0.5" value="10" />%</label>
+              </div>
+              <p class="profile-buy-summary" id="profile-buy-summary"></p>
+            </div>
+            <p class="optional-rule" id="optional-etf-rule"></p>
+            <p class="optional-status" id="optional-etf-status" role="status" aria-live="polite">进入个人页后，按当前策略读取已校验的历史数据。</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="可选ETF历史信号列表，可左右滚动">
+              <table class="optional-etf-table">
+                <thead><tr><th scope="col">触发时间</th><th scope="col">ETF</th><th scope="col">触发条件</th><th scope="col">触发原因</th><th scope="col">数据截至</th></tr></thead>
+                <tbody id="optional-etf-body"><tr><td colspan="5" class="holding-empty">等待读取历史信号</td></tr></tbody>
+              </table>
+            </div>
+            <p class="optional-note">同一 ETF 多次触发会分别列出。这里展示历史策略信号，不代表当前仍满足买入条件；组合回测中的实际成交还受资金份数限制。</p>
+          </section>
+          <section class="rule-card profile-operations-card">
+            <div class="section-heading">
+              <div><p class="eyebrow">公开协作</p><h2>操作记录</h2><p>所有访问者都可以查看、新增、修改和删除；不要填写个人身份信息。</p></div>
+              <button class="secondary-button" type="button" id="refresh-operations">刷新记录</button>
+            </div>
+            <form id="operation-form" class="operation-form">
+              <input type="hidden" id="operation-id" />
+              <label>ETF/股票代码<input id="operation-code" inputmode="numeric" pattern="\d{6}" maxlength="6" required /></label>
+              <label>买入日期<input id="operation-buy-date" type="date" required /></label>
+              <label>买入价格<input id="operation-buy-price" type="number" min="0.0001" step="0.0001" required /></label>
+              <label>卖出日期<input id="operation-sell-date" type="date" /></label>
+              <label>卖出价格<input id="operation-sell-price" type="number" min="0.0001" step="0.0001" /></label>
+              <label>份数<input id="operation-parts" type="number" min="0.01" step="0.01" value="1" required /></label>
+              <label class="wide">买入条件<input id="operation-buy-condition" maxlength="120" placeholder="例如：估值低、补仓1、低价" /></label>
+              <label class="wide">卖出条件<input id="operation-sell-condition" maxlength="120" placeholder="例如：达到持仓目标收益" /></label>
+              <label class="wide">卖出理由<input id="operation-sell-reason" maxlength="240" /></label>
+              <div class="operation-form-actions">
+                <button class="primary-button" type="submit">保存记录</button>
+                <button class="text-button" type="button" id="cancel-operation-edit">取消编辑</button>
+              </div>
+            </form>
+            <p class="optional-status" id="operations-status" role="status" aria-live="polite">正在读取公开记录。</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="公开操作记录，可左右滚动">
+              <table class="operations-table">
+                <thead><tr><th>代码</th><th>买入</th><th>卖出</th><th>收益</th><th>买入条件</th><th>卖出状态/理由</th><th></th></tr></thead>
+                <tbody id="operations-body"><tr><td colspan="7" class="holding-empty">等待读取公开记录</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+    <script src="app.js?v=20261029-1"></script>
+  </body>
+</html>

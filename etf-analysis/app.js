@@ -29,6 +29,9 @@ let optionalEtfRequest = 0;
 let optionalEtfTimer = null;
 let optionalEtfResults = new Map();
 const strategy = { annualRate: 15, shortReturn: 10, optionTwo: 30, tierOne: 20, tierTwo: 40, sellRule: 'time' };
+const profileBuyRules = { priceNearLowPct: 10, valuationNearLowPct: 10, supplementLevels: [.7, .49, .343, .2401] };
+let publicOperations = [];
+let operationsRequest = 0;
 const verifiedOhlc = new Map();
 const verifiedValuation = new Map();
 const valuationUnavailableReasons = new Map();
@@ -106,7 +109,10 @@ function switchPage(page) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.getElementById('page-title').textContent = pageTitles[page];
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (page === 'profile') refreshOptionalEtfs();
+  if (page === 'profile') {
+    refreshOptionalEtfs();
+    loadPublicOperations();
+  }
 }
 
 function renderRuleSummaries() {
@@ -127,7 +133,31 @@ function markStrategyPending() {
   document.getElementById('detail-run-state').textContent = `待执行：${sellRuleLabel()}`;
   optionalEtfRequest += 1;
   clearTimeout(optionalEtfTimer);
-  if (activePage === 'profile') optionalEtfTimer = setTimeout(refreshOptionalEtfs, 180);
+}
+
+function profileBuySummary() {
+  return `PE创新低标记“估值低”；ETF收盘价≤历史最低价×${(1 + profileBuyRules.priceNearLowPct / 100).toFixed(2)}标记“低价”；PE≤历史最低PE×${(1 + profileBuyRules.valuationNearLowPct / 100).toFixed(2)}标记“低估值附近”；补仓标记补仓1至补仓4。`;
+}
+
+function renderProfileBuyRules() {
+  const price = document.getElementById('profile-price-near-low');
+  const pe = document.getElementById('profile-pe-near-low');
+  const summary = document.getElementById('profile-buy-summary');
+  if (!price || !pe || !summary) return;
+  price.value = profileBuyRules.priceNearLowPct;
+  pe.value = profileBuyRules.valuationNearLowPct;
+  summary.textContent = profileBuySummary();
+}
+
+function bindProfileBuyRules() {
+  document.querySelectorAll('#profile-price-near-low, #profile-pe-near-low').forEach(input => {
+    input.addEventListener('input', () => {
+      const key = input.id === 'profile-price-near-low' ? 'priceNearLowPct' : 'valuationNearLowPct';
+      profileBuyRules[key] = Math.max(0, Math.min(100, Number(input.value) || 0));
+      renderProfileBuyRules();
+      if (activePage === 'profile') refreshOptionalEtfs();
+    });
+  });
 }
 
 function strategyEditor(context) {
@@ -182,6 +212,36 @@ function recentSignalRange(asOf) {
   return { start: start.toISOString().slice(0, 10), end: asOf };
 }
 
+function valuationByDate(valuation) {
+  const map = new Map();
+  let latest = null;
+  (valuation || []).forEach(point => {
+    latest = point;
+    map.set(point.date, point);
+  });
+  return { map, latest };
+}
+
+function conditionInfo(candle, valuationPoint, valuationLow, priceLow, rules) {
+  const conditions = [];
+  const labels = [];
+  const pe = Number(valuationPoint?.pe_ttm);
+  const close = Number(candle.close);
+  if (valuationPoint && pe > 0 && pe <= valuationLow) {
+    conditions.push('valuation_low');
+    labels.push('估值低');
+  }
+  if (close > 0 && close <= priceLow * (1 + rules.priceNearLowPct / 100)) {
+    conditions.push('price_near_low');
+    labels.push('低价');
+  }
+  if (pe > 0 && pe <= valuationLow * (1 + rules.valuationNearLowPct / 100)) {
+    conditions.push('valuation_near_low');
+    labels.push('低估值附近');
+  }
+  return { conditions, labels };
+}
+
 function collectOptionalSignals(results, asOf) {
   const { start, end } = recentSignalRange(asOf);
   const signals = [];
@@ -190,11 +250,73 @@ function collectOptionalSignals(results, asOf) {
     result.trades.forEach((trade, eventIndex) => {
       if (trade.type !== 'buy' || trade.date < start || trade.date > end) return;
       signals.push({ code: etf.code, name: etf.name, date: trade.date,
-        condition: trade.isSupplement ? '加仓' : '买入', reason: trade.reason,
+        condition: (trade.conditionLabels || []).join(' · ') || (trade.isSupplement ? '加仓' : '买入'),
+        conditionLabels: trade.conditionLabels || [],
+        reason: trade.reason,
         latestDate, stale, eventIndex });
     });
   });
   return signals.sort((a, b) => b.date.localeCompare(a.date) || a.code.localeCompare(b.code) || a.eventIndex - b.eventIndex);
+}
+
+function simulateBuySignals(payload, rules = profileBuyRules) {
+  const candles = (payload.ohlc || []).filter(candle => candle.date >= '2020-01-01');
+  const valuation = (payload.valuation || []).filter(point => point.date >= '2016-01-01');
+  if (!candles.length || !valuation.length) return { available: false, trades: [] };
+  const valuationPoints = valuationByDate(valuation).map;
+  let valuationLow = Infinity;
+  let priceLow = Infinity;
+  let supplementStage = 0;
+  let holding = false;
+  let initialPrice = 0;
+  const trades = [];
+  let valuationCursor = 0;
+  let latestValuation = null;
+  const sortedValuation = valuation.slice().sort((a, b) => a.date.localeCompare(b.date));
+  candles.forEach((candle, index) => {
+    while (valuationCursor < sortedValuation.length && sortedValuation[valuationCursor].date <= candle.date) {
+      latestValuation = sortedValuation[valuationCursor++];
+      const value = Number(latestValuation.pe_ttm);
+      latestValuation.isNewLow = value > 0 && value < valuationLow;
+      if (latestValuation.isNewLow) valuationLow = value;
+    }
+    const close = Number(candle.close);
+    if (!(close > 0) || !(valuationLow < Infinity)) return;
+    const priorPriceLow = priceLow;
+    priceLow = Math.min(priceLow, close);
+    const isNewValuationLow = Boolean(latestValuation?.isNewLow);
+    const peValue = Number(latestValuation?.pe_ttm);
+    if (!holding && isNewValuationLow) {
+      const info = conditionInfo(candle, latestValuation, peValue, priceLow, rules);
+      trades.push({
+        date: candle.date, type: 'buy', operation: '买入 1 份',
+        reason: '行业 PETTM 创动态历史新低', price: close, parts: 1,
+        conditions: ['valuation_low', ...info.conditions.filter(item => item !== 'valuation_low')],
+        conditionLabels: ['估值低', ...info.labels.filter(item => item !== '估值低')],
+      });
+      holding = true;
+      initialPrice = close;
+      supplementStage = 0;
+      return;
+    }
+    if (!holding || !(priorPriceLow > 0)) return;
+    while (supplementStage < rules.supplementLevels.length) {
+      const threshold = initialPrice * rules.supplementLevels[supplementStage];
+      if (!(candle.low <= threshold)) break;
+      const info = conditionInfo(candle, latestValuation, valuationLow, priceLow, rules);
+      supplementStage += 1;
+      trades.push({
+        date: candle.date, type: 'buy', operation: `补仓 1 份`,
+        reason: `价格跌至补仓${supplementStage}触发价 ${threshold.toFixed(3)}`,
+        price: Math.min(Number(candle.open) || threshold, threshold),
+        parts: 1, isSupplement: true, supplementIndex: supplementStage,
+        triggerPrice: threshold,
+        conditions: [`supplement_${supplementStage}`, ...info.conditions],
+        conditionLabels: [`补仓${supplementStage}`, ...info.labels],
+      });
+    }
+  });
+  return { available: true, trades };
 }
 
 function escapeHtml(value) {
@@ -207,10 +329,10 @@ async function refreshOptionalEtfs() {
   const button = document.getElementById('refresh-optional-etfs');
   const status = document.getElementById('optional-etf-status');
   const body = document.getElementById('optional-etf-body');
-  const rules = { ...strategy };
+  const rules = { ...profileBuyRules };
   const asOf = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const range = recentSignalRange(asOf);
-  document.getElementById('optional-etf-rule').textContent = `当前策略：${sellRuleLabel(rules)} · 短期收益 ${rules.shortReturn}% · 时间范围 ${range.start} 至 ${range.end}`;
+  document.getElementById('optional-etf-rule').textContent = `当前策略：个人独立买入条件（低价 ${rules.priceNearLowPct}%、低估值 ${rules.valuationNearLowPct}%、补仓1至补仓4） · 时间范围 ${range.start} 至 ${range.end}`;
   optionalEtfResults = new Map();
   if (!dashboardMeta) {
     button.disabled = false;
@@ -228,7 +350,7 @@ async function refreshOptionalEtfs() {
     try {
       const payload = await loadBacktestDataset(etf.code);
       if (request !== optionalEtfRequest) return;
-      const result = simulateEtfStrategy(payload, rules);
+      const result = simulateBuySignals(payload, rules);
       if (!result.available) unavailable += 1;
       else results.push({ etf, result, latestDate: payload.ohlc.at(-1).date, stale: Boolean(payload.stale || etf.stale) });
     } catch (_) { failed += 1; }
@@ -241,7 +363,7 @@ async function refreshOptionalEtfs() {
   body.innerHTML = signals.map(signal => `<tr>
     <td>${escapeHtml(signal.date)}</td>
     <td><button class="holding-etf-link" type="button" data-optional-etf="${escapeHtml(signal.code)}"><span>${escapeHtml(signal.name)}</span><small>${escapeHtml(signal.code)}</small></button></td>
-    <td><span class="optional-signal ${signal.condition === '加仓' ? 'supplement' : ''}">${signal.condition}</span></td>
+    <td><span class="optional-signal ${signal.condition.includes('补仓') ? 'supplement' : ''}">${escapeHtml(signal.condition)}</span></td>
     <td class="optional-reason">${escapeHtml(signal.reason)}</td>
     <td>${escapeHtml(signal.latestDate)}${signal.stale ? '<span class="stale-badge">数据过旧</span>' : ''}</td>
   </tr>`).join('') || '<tr><td colspan="5" class="holding-empty">最近一年内，已读取的数据未出现符合当前条件的买入或加仓记录</td></tr>';
@@ -251,8 +373,7 @@ async function refreshOptionalEtfs() {
     const result = optionalEtfResults.get(code);
     const etf = etfs.find(item => item.code === code);
     if (!etf || !result) return;
-    Object.assign(etf, { return: result.return, actions: result.actions, days: result.days,
-      strategyTrades: result.trades, strategyComputed: result.available, appliedRules: result.rules, openHolding: result.openHolding });
+    Object.assign(etf, { strategyTrades: result.trades, strategyComputed: result.available, appliedRules: result.rules });
     renderTable(document.getElementById('etf-search').value);
     openEtfDetail(code);
   }));
@@ -266,11 +387,17 @@ function simulateEtfStrategy(payload, rules) {
 
   const newLowDates = new Set();
   let historicalLow = Infinity;
+  const peByDate = new Map();
+  const peLowByDate = new Map();
   valuation.forEach(point => {
     const value = Number(point.pe_ttm);
     if (value > 0 && value < historicalLow) {
       if (historicalLow < Infinity) newLowDates.add(point.date);
       historicalLow = value;
+    }
+    if (value > 0) {
+      peByDate.set(point.date, value);
+      peLowByDate.set(point.date, historicalLow);
     }
   });
 
@@ -282,6 +409,9 @@ function simulateEtfStrategy(payload, rules) {
   let tierOneSold = false;
   let holdingDays = 0;
   let totalInvestedCost = 0;
+  let priceHistoricalLow = Infinity;
+  let latestPe = null;
+  let latestPeLow = Infinity;
   const trades = [];
   const supplementLevels = [.7, .49, .343, .2401];
 
@@ -294,7 +424,12 @@ function simulateEtfStrategy(payload, rules) {
     lots.push({ quantity: 1 / price, cost: 1, buyIndex: candle.index });
     cash -= 1;
     totalInvestedCost += 1;
-    record(candle, operation, reason, null, 0, { type: 'buy', price, parts: 1, ...execution });
+    record(candle, operation, reason, null, 0, {
+      type: 'buy', price, parts: 1,
+      conditions: execution.conditions || [],
+      conditionLabels: execution.conditionLabels || [],
+      ...execution,
+    });
     return true;
   };
   const sellFraction = (candle, fraction, reason) => {
@@ -319,11 +454,28 @@ function simulateEtfStrategy(payload, rules) {
 
   candles.forEach((sourceCandle, index) => {
     const candle = { ...sourceCandle, index };
+    const peDates = [...peByDate.keys()].filter(day => day <= candle.date);
+    const latestPeDate = peDates.at(-1);
+    if (latestPeDate) {
+      latestPe = peByDate.get(latestPeDate);
+      latestPeLow = peLowByDate.get(latestPeDate);
+    }
+    priceHistoricalLow = Math.min(priceHistoricalLow, Number(candle.close));
+    const info = conditionInfo(
+      candle,
+      latestPe ? { pe_ttm: latestPe } : null,
+      latestPeLow,
+      priceHistoricalLow,
+      { ...profileBuyRules, ...rules },
+    );
     if (lots.length) holdingDays += 1;
 
     if (!lots.length && newLowDates.has(candle.date) && cash >= 1) {
       initialPrice = candle.close;
-      buyPart(candle, candle.close, '行业 PETTM 创动态历史新低');
+      buyPart(candle, candle.close, '行业 PETTM 创动态历史新低', '买入 1 份', {
+        conditions: ['valuation_low', ...info.conditions.filter(item => item !== 'valuation_low')],
+        conditionLabels: ['估值低', ...info.labels.filter(item => item !== '估值低')],
+      });
       holdingDays += 1;
       return;
     }
@@ -334,7 +486,14 @@ function simulateEtfStrategy(payload, rules) {
       const triggerPrice = initialPrice * supplementLevels[supplementStage];
       if (candle.low > triggerPrice) break;
       const fillPrice = candle.open <= triggerPrice ? candle.open : triggerPrice;
-      if (!buyPart(candle, fillPrice, `价格跌至首次买入价的 ${(supplementLevels[supplementStage] * 100).toFixed(2)}%`, '补仓 1 份', { isSupplement: true, triggerPrice })) break;
+      const supplementIndex = supplementStage + 1;
+      if (!buyPart(candle, fillPrice, `价格跌至首次买入价的 ${(supplementLevels[supplementStage] * 100).toFixed(2)}%`, `补仓 ${supplementIndex} 份`, {
+        isSupplement: true,
+        supplementIndex,
+        triggerPrice,
+        conditions: [`supplement_${supplementIndex}`, ...info.conditions],
+        conditionLabels: [`补仓${supplementIndex}`, ...info.labels],
+      })) break;
       supplementStage += 1;
     }
 
@@ -547,7 +706,7 @@ function renderDetail() {
   const hasStrategyRecords = usesPortfolioRecords || selected.strategyComputed;
   const strategyRecords = hasStrategyRecords ? detailTrades.map(trade => [
     `${trade.date} 收盘`,
-    `${trade.operation}：${trade.reason}`,
+    `${trade.operation}：${trade.reason}${trade.conditionLabels?.length ? `（${trade.conditionLabels.join('、')}）` : ''}`,
     trade.return === null ? '--' : signed(trade.return * 100),
     trade.days ? `${trade.days} 天` : '--'
   ]) : demoRecords;
@@ -860,9 +1019,10 @@ async function calculatePortfolioBacktest(capital, capitalParts, rules, progress
       holdings.set(event.code, holding);
       maxHeldParts = Math.max(maxHeldParts, openParts());
       const operation = pending ? '补仓 1 份（待买成交）' : event.operation;
-      const reason = pending ? `${event.reason}；${event.date} 触发待买，本日价格仍低于 ${Number(event.triggerPrice).toFixed(3)}` : event.reason;
+      const labels = event.conditionLabels?.length ? `；条件：${event.conditionLabels.join('、')}` : '';
+      const reason = pending ? `${event.reason}${labels}；${event.date} 触发待买，本日价格仍低于 ${Number(event.triggerPrice).toFixed(3)}` : `${event.reason}${labels}`;
       addRecord(date, [event.name, operation, `${reason}；本份资金 ¥${money(partAmount)}`, '--', '--', 1, event.code]);
-      addActualOperation(event.code, { date, operation, reason: `${reason}；本份资金 ¥${money(partAmount)}`, return: null, days: 0, type: 'buy', price, parts: 1 });
+      addActualOperation(event.code, { date, operation, reason: `${reason}；本份资金 ¥${money(partAmount)}`, return: null, days: 0, type: 'buy', price, parts: 1, conditionLabels: event.conditionLabels || [] });
       return true;
   };
   const cancelPendingFor = (code, date) => {
@@ -979,12 +1139,143 @@ async function runBacktest() {
   }
 }
 
+function operationLatestPrice(operation) {
+  const etf = etfs.find(item => item.code === operation.code);
+  return etf && Number.isFinite(Number(etf.price)) ? Number(etf.price) : null;
+}
+
+function operationSellState(operation) {
+  const buyPrice = Number(operation.buy_price);
+  const referencePrice = operation.sell_price == null ? operationLatestPrice(operation) : Number(operation.sell_price);
+  if (!(buyPrice > 0) || !(referencePrice > 0)) return { label: '暂无行情', className: 'neutral', reason: '' };
+  const profit = referencePrice / buyPrice - 1;
+  if (!operation.sell_date || operation.sell_price == null) {
+    return { label: '持仓中', className: profit >= 0 ? 'positive' : 'negative', reason: '' };
+  }
+  const days = Math.max(1, Math.round((Date.parse(operation.sell_date) - Date.parse(operation.buy_date)) / 86400000));
+  let triggered = false;
+  let reason = operation.sell_reason || operation.sell_condition || '';
+  if (strategy.sellRule === 'time') {
+    const target = strategy.annualRate / 100 / 12 * Math.max(1, days / 21);
+    triggered = profit >= target;
+    if (!reason) reason = `持仓${days}天目标收益 ${(target * 100).toFixed(2)}%`;
+  } else if (strategy.sellRule === 'thirty') {
+    triggered = profit >= strategy.optionTwo / 100;
+    if (!reason) reason = `整体收益目标 ${strategy.optionTwo}%`;
+  } else {
+    triggered = profit >= strategy.tierOne / 100;
+    if (!reason) reason = `分段收益目标 ${strategy.tierOne}% / ${strategy.tierTwo}%`;
+  }
+  return {
+    label: triggered ? '已触发卖出条件' : '未触发卖出条件',
+    className: triggered ? 'sell-triggered' : profit >= 0 ? 'positive' : 'negative',
+    reason,
+  };
+}
+
+function renderOperationForm(operation = null) {
+  document.getElementById('operation-id').value = operation?.id || '';
+  document.getElementById('operation-code').value = operation?.code || '';
+  document.getElementById('operation-buy-date').value = operation?.buy_date || '';
+  document.getElementById('operation-buy-price').value = operation?.buy_price || '';
+  document.getElementById('operation-sell-date').value = operation?.sell_date || '';
+  document.getElementById('operation-sell-price').value = operation?.sell_price ?? '';
+  document.getElementById('operation-parts').value = operation?.parts || 1;
+  document.getElementById('operation-buy-condition').value = operation?.buy_condition || '';
+  document.getElementById('operation-sell-condition').value = operation?.sell_condition || '';
+  document.getElementById('operation-sell-reason').value = operation?.sell_reason || '';
+}
+
+function renderPublicOperations() {
+  const body = document.getElementById('operations-body');
+  if (!body) return;
+  body.innerHTML = publicOperations.map(operation => {
+    const state = operationSellState(operation);
+    const current = operation.sell_price == null ? operationLatestPrice(operation) : Number(operation.sell_price);
+    const profit = current && Number(operation.buy_price) ? current / Number(operation.buy_price) - 1 : null;
+    const profitText = profit == null ? '--' : signed(profit * 100);
+    return `<tr class="${state.className === 'sell-triggered' ? 'operation-sell-row' : ''}">
+      <td><strong>${escapeHtml(operation.code)}</strong></td>
+      <td>${escapeHtml(operation.buy_date)}<small>${Number(operation.buy_price).toFixed(3)} × ${Number(operation.parts)}</small></td>
+      <td>${escapeHtml(operation.sell_date || '--')}<small>${operation.sell_price == null ? '--' : Number(operation.sell_price).toFixed(3)}</small></td>
+      <td class="${profit == null ? '' : profit >= 0 ? 'positive' : 'negative'}">${profitText}</td>
+      <td>${escapeHtml(operation.buy_condition || '--')}</td>
+      <td><span class="operation-state ${state.className}">${state.label}</span><small>${escapeHtml(state.reason)}</small></td>
+      <td><button class="text-button" type="button" data-edit-operation="${escapeHtml(operation.id)}">编辑</button><button class="text-button danger-button" type="button" data-delete-operation="${escapeHtml(operation.id)}">删除</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="holding-empty">暂无公开操作记录</td></tr>';
+  document.querySelectorAll('[data-edit-operation]').forEach(button => button.addEventListener('click', () => {
+    renderOperationForm(publicOperations.find(item => item.id === button.dataset.editOperation));
+  }));
+  document.querySelectorAll('[data-delete-operation]').forEach(button => button.addEventListener('click', async () => {
+    const id = button.dataset.deleteOperation;
+    if (!window.confirm('确定删除这条公开操作记录吗？')) return;
+    const response = await fetch(`/api/operations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!response.ok) {
+      document.getElementById('operations-status').textContent = '删除失败，请稍后重试。';
+      return;
+    }
+    await loadPublicOperations();
+  }));
+}
+
+async function loadPublicOperations() {
+  const request = ++operationsRequest;
+  const status = document.getElementById('operations-status');
+  if (!status) return;
+  try {
+    const response = await fetch('/api/operations');
+    if (!response.ok) throw new Error('公开记录接口尚未配置');
+    const payload = await response.json();
+    if (request !== operationsRequest) return;
+    publicOperations = Array.isArray(payload.operations) ? payload.operations : [];
+    renderPublicOperations();
+    status.textContent = `公开记录 ${publicOperations.length} 条；所有访问者均可修改。`;
+  } catch (error) {
+    status.textContent = `公开记录暂不可用：${error.message}`;
+    renderPublicOperations();
+  }
+}
+
+async function submitPublicOperation(event) {
+  event.preventDefault();
+  const id = document.getElementById('operation-id').value;
+  const payload = {
+    code: document.getElementById('operation-code').value.trim(),
+    buy_date: document.getElementById('operation-buy-date').value,
+    buy_price: Number(document.getElementById('operation-buy-price').value),
+    sell_date: document.getElementById('operation-sell-date').value || null,
+    sell_price: document.getElementById('operation-sell-price').value === '' ? null : Number(document.getElementById('operation-sell-price').value),
+    parts: Number(document.getElementById('operation-parts').value) || 1,
+    buy_condition: document.getElementById('operation-buy-condition').value.trim(),
+    sell_condition: document.getElementById('operation-sell-condition').value.trim(),
+    sell_reason: document.getElementById('operation-sell-reason').value.trim(),
+  };
+  const status = document.getElementById('operations-status');
+  const response = await fetch(id ? `/api/operations/${encodeURIComponent(id)}` : '/api/operations', {
+    method: id ? 'PUT' : 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    status.textContent = `保存失败：${error.error || '接口错误'}`;
+    return;
+  }
+  renderOperationForm();
+  status.textContent = '记录已保存，正在刷新公开列表。';
+  await loadPublicOperations();
+}
+
 document.querySelectorAll('[data-page]').forEach(el => el.addEventListener('click', () => switchPage(el.dataset.page)));
 document.getElementById('etf-search').addEventListener('input', e => renderTable(e.target.value));
 document.getElementById('run-screen').addEventListener('click', executeScreeningBacktest);
 document.getElementById('apply-detail-strategy').addEventListener('click', executeDetailBacktest);
 document.getElementById('run-backtest').addEventListener('click', runBacktest);
 document.getElementById('refresh-optional-etfs').addEventListener('click', refreshOptionalEtfs);
+document.getElementById('refresh-operations').addEventListener('click', loadPublicOperations);
+document.getElementById('operation-form').addEventListener('submit', submitPublicOperation);
+document.getElementById('cancel-operation-edit').addEventListener('click', () => renderOperationForm());
 document.getElementById('market-chart').addEventListener('wheel', event => {
   event.preventDefault();
   if (!activeChartModel) return;
@@ -1051,7 +1342,7 @@ document.getElementById('market-chart').addEventListener('mouseleave', () => {
 });
 
 document.getElementById('eligible-count').textContent = etfs.length;
-renderStrategyEditors(); renderRuleSummaries(); renderTable(); renderDetail();
+renderStrategyEditors(); renderProfileBuyRules(); bindProfileBuyRules(); renderRuleSummaries(); renderTable(); renderDetail(); renderPublicOperations();
 document.getElementById('backtest-stats').innerHTML = [metric('期末资产', '--'), metric('策略收益', '--'), metric('年化收益', '--'), metric('最大回撤', '--')].join('');
 renderHoldingSummary();
 drawReturnChart(Number(document.getElementById('initial-capital').value) || 100000, []);

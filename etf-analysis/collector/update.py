@@ -76,6 +76,24 @@ def akshare_kline_request(code: str, begin: str, end: str) -> dict:
     return payload
 
 
+def baostock_kline_request(code: str, begin: str, end: str) -> dict:
+    """Bound BaoStock's anonymous login and ETF query in a child process."""
+    limit = float(os.environ.get("ETF_BAOSTOCK_MAX_TIME", "30"))
+    try:
+        response = subprocess.run(
+            [sys.executable, str(ROOT / "baostock_price_worker.py"), code, begin, end],
+            capture_output=True, text=True, check=False, timeout=limit,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"BaoStock超过{limit:g}秒，已终止该请求，保留旧缓存") from exc
+    if response.returncode:
+        raise RuntimeError(response.stderr.strip()[-1000:] or f"BaoStock退出码{response.returncode}")
+    payload = json.loads(response.stdout)
+    if not kline_rows(payload):
+        raise ValueError("BaoStock未返回有效日K记录")
+    return payload
+
+
 def read_json(path: Path, fallback):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -220,6 +238,21 @@ def eastmoney_kline_request(
     raise RuntimeError("；".join(errors))
 
 
+def eastmoney_gateway_request(
+    endpoint: str,
+    label: str,
+    query: str,
+    headers: dict[str, str],
+) -> tuple[dict, str]:
+    def read_endpoint():
+        payload = request_json(endpoint + "?" + query, headers)
+        if not kline_rows(payload):
+            raise ValueError("未返回有效日K记录")
+        return payload
+
+    return call_price_source(label, read_endpoint), label
+
+
 def pe_rows(payload: dict) -> list[dict]:
     rows = {}
     for item in payload.get("data") or []:
@@ -274,30 +307,48 @@ def update_price(
         }
     )
     source = "东方财富前复权日K（fqt=1）"
-    try:
-        raw, source_label = eastmoney_kline_request(
-            query,
-            {
-                "User-Agent": "Mozilla/5.0",
-                "Referer": (
-                    f"https://quote.eastmoney.com/"
-                    f"{'sh' if market == '1' else 'sz'}{code}.html"
-                ),
-            },
-        )
-        incoming = kline_rows(raw)
-        source = f"{source_label}前复权日K（fqt=1）"
-    except Exception as primary_error:
-        try:
-            raw = call_price_source(
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": (
+            f"https://quote.eastmoney.com/"
+            f"{'sh' if market == '1' else 'sz'}{code}.html"
+        ),
+    }
+    errors: list[str] = []
+    incoming = []
+    raw = None
+    source = ""
+    sources = (
+        ("eastmoney", lambda: eastmoney_gateway_request(
+            EASTMONEY, "东方财富主接口", query, headers,
+        )),
+        ("baostock", lambda: (
+            baostock_kline_request(code, begin, cutoff_date.isoformat()),
+            "BaoStock前复权日K",
+        )),
+        ("eastmoney-backup", lambda: eastmoney_gateway_request(
+            EASTMONEY_BACKUP, "东方财富备用接口", query, headers,
+        )),
+        ("akshare", lambda: (
+            call_price_source(
                 "AkShare东方财富",
                 lambda: akshare_kline_request(code, begin, cutoff_date.isoformat()),
-            )
-            incoming, source = kline_rows(raw), "AkShare东方财富"
-        except Exception as fallback_error:
-            raise RuntimeError(
-                f"东方财富：{primary_error}；AkShare：{fallback_error}"
-            ) from fallback_error
+            ),
+            "AkShare东方财富",
+        )),
+    )
+    for _name, loader in sources:
+        try:
+            raw, source = loader()
+            incoming = kline_rows(raw)
+            if incoming:
+                break
+        except Exception as exc:
+            errors.append(str(exc))
+    if not incoming:
+        raise RuntimeError("；".join(errors))
+    if source.startswith("东方财富"):
+        source = f"{source}前复权日K（fqt=1）"
 
     incoming = [
         row for row in incoming

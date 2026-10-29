@@ -163,21 +163,13 @@ async function run() {
     assert(vm.runInContext('selected.strategyComputed && detailPortfolioCode === null', context), '信号详情应展示同一策略的操作记录');
     assert.strictEqual(elements.get('page-title').textContent, 'ETF 详情', '点击应切换至详情页');
   }
-  const expectedOptionalDates = await vm.runInContext(`(async () => {
-    const asOf = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-    const { start, end } = recentSignalRange(asOf);
-    let count = 0;
-    for (const etf of etfs) {
-      const payload = await loadBacktestDataset(etf.code);
-      const result = simulateEtfStrategy(payload, { ...strategy, sellRule: 'thirty', optionTwo: 75 });
-      count += result.trades.filter(trade => trade.type === 'buy' && trade.date >= start && trade.date <= end).length;
-    }
+  const optionalCountBeforeScreenRuleChange = optionalLinks.length;
+  await vm.runInContext(`(async () => {
     strategy.sellRule = 'thirty'; strategy.optionTwo = 75;
     await refreshOptionalEtfs();
-    return count;
   })()`, context);
-  assert.strictEqual(optionalLinks.length, expectedOptionalDates, '更改共用卖出条件后，个人页信号数应与重新计算的策略一致');
-  assert(elements.get('optional-etf-rule').textContent.includes('75%'), '个人页应更新已使用的策略参数');
+  assert.strictEqual(optionalLinks.length, optionalCountBeforeScreenRuleChange, '筛选页卖出条件变化不能改变个人页独立买入信号');
+  assert(elements.get('optional-etf-rule').textContent.includes('个人独立买入条件'), '个人页应说明使用独立买入条件');
   vm.runInContext("strategy.sellRule = 'time'; strategy.optionTwo = 30", context);
   const realDashboardMeta = vm.runInContext('dashboardMeta', context);
   vm.runInContext('dashboardMeta = null', context);

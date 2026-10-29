@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import subprocess
 import unittest
 from datetime import date
 from pathlib import Path
@@ -13,6 +14,7 @@ sys.path.insert(0, str(ROOT / "collector"))
 
 import publish_to_dashboard as publisher_helpers  # noqa: E402
 import update as updater  # noqa: E402
+from baostock_price_worker import market_code  # noqa: E402
 from daily_pipeline import (  # noqa: E402
     cutoff_for_session,
     has_new_complete_trading_day,
@@ -29,6 +31,7 @@ from update import (
     EASTMONEY,
     EASTMONEY_BACKUP,
     eastmoney_kline_request,
+    baostock_kline_request,
     kline_rows,
     merged,
     run_update,
@@ -127,6 +130,10 @@ class UniverseRulesTest(unittest.TestCase):
 
 
 class PriceValidationTest(unittest.TestCase):
+    def test_baostock_market_code_mapping(self) -> None:
+        self.assertEqual(market_code("512760"), "sh.512760")
+        self.assertEqual(market_code("159796"), "sz.159796")
+
     @patch("update.request_json")
     def test_eastmoney_backup_gateway_is_used_after_primary_failure(
         self, request_json
@@ -148,6 +155,24 @@ class PriceValidationTest(unittest.TestCase):
         self.assertTrue(
             request_json.call_args_list[1].args[0].startswith(EASTMONEY_BACKUP)
         )
+
+    @patch("update.subprocess.run")
+    def test_baostock_worker_returns_valid_kline_payload(self, worker) -> None:
+        worker.return_value = subprocess.CompletedProcess(
+            [], 0,
+            '{"data":{"klines":["2026-10-27,1.0,1.1,1.2,0.9"]}}',
+            "",
+        )
+        payload = baostock_kline_request("512760", "2026-10-27", "2026-10-27")
+        self.assertEqual(kline_rows(payload)[0]["date"], "2026-10-27")
+        self.assertEqual(worker.call_args.args[0][-3:], ["512760", "2026-10-27", "2026-10-27"])
+        self.assertEqual(worker.call_args.kwargs["timeout"], 30)
+
+    @patch("update.subprocess.run", side_effect=subprocess.TimeoutExpired("baostock", 30))
+    def test_baostock_timeout_is_bounded(self, worker) -> None:
+        with self.assertRaisesRegex(RuntimeError, "BaoStock超过30秒"):
+            baostock_kline_request("159796", "2026-10-27", "2026-10-28")
+        self.assertEqual(worker.call_args.kwargs["timeout"], 30)
 
     def test_provider_error_is_summarized_without_request_url(self) -> None:
         message = summarize_error(
@@ -264,7 +289,7 @@ class IncrementalCacheTest(unittest.TestCase):
             "date": "2026-10-23", "open": 1.0, "close": 1.1, "high": 1.2, "low": 0.9,
         }
 
-    @patch("update.eastmoney_kline_request")
+    @patch("update.eastmoney_gateway_request")
     def test_price_requests_next_day_only_and_keeps_old_values(self, request) -> None:
         updater.write_json(updater.PRICE / "512760.json", {"prices": [self.old_price]})
         request.return_value = (
@@ -273,10 +298,10 @@ class IncrementalCacheTest(unittest.TestCase):
                 "2026-10-26,1.1,1.2,1.3,1.0",
                 "2026-10-27,1.2,1.3,1.4,1.1",  # Not yet closed.
             ]}},
-            "东方财富备用接口",
+            "东方财富主接口",
         )
         result = updater.update_price("512760", date(2026, 10, 26))
-        params = parse_qs(request.call_args.args[0])
+        params = parse_qs(request.call_args.args[2])
         self.assertEqual(params["beg"], ["20261024"])
         self.assertEqual(params["end"], ["20261026"])
         self.assertEqual(params["fqt"], ["1"])
@@ -301,7 +326,7 @@ class IncrementalCacheTest(unittest.TestCase):
         saved = updater.read_cache(updater.PE / "990001.json", "points")
         self.assertEqual(saved["points"], [old, {"date": "2026-10-26", "peTTM": 21.0}])
 
-    @patch("update.eastmoney_kline_request")
+    @patch("update.eastmoney_gateway_request")
     @patch("update.request_json")
     def test_complete_caches_do_not_request_network(self, pe_request, price_request) -> None:
         updater.write_json(updater.PRICE / "512760.json", {"prices": [self.old_price]})
@@ -313,13 +338,13 @@ class IncrementalCacheTest(unittest.TestCase):
         price_request.assert_not_called()
         pe_request.assert_not_called()
 
-    @patch("update.eastmoney_kline_request")
+    @patch("update.eastmoney_gateway_request")
     def test_only_new_etf_fetches_initial_history(self, request) -> None:
         request.return_value = (
             {"data": {"klines": ["2026-10-26,1,1,1,1"]}}, "东方财富主接口",
         )
         updater.update_price("512760", date(2026, 10, 26))
-        self.assertEqual(parse_qs(request.call_args.args[0])["beg"], ["20200101"])
+        self.assertEqual(parse_qs(request.call_args.args[2])["beg"], ["20200101"])
 
     @patch("update.request_json")
     def test_broken_existing_cache_must_not_trigger_full_download(self, request) -> None:

@@ -3,7 +3,16 @@
   "name": "lin-etf-analysis",
   "compatibility_date": "2026-09-20",
   "preview_urls": false,
+  "main": "./worker.js",
   "assets": {
     "directory": "./cloudflare-upload"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lin-etf-operations",
+      "database_id": "210c0624-aeb8-43cd-b161-73d593ba9391",
+      "migrations_dir": "./migrations"
+    }
+  ]
 }

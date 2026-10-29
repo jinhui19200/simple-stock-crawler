@@ -1,0 +1,254 @@
+/* Navigation overrides kept separate while the main stylesheet remains compact. */
+.sidebar {
+  width: 128px;
+  background: #dcecff;
+  border-right-color: #c5dcf7;
+  padding: 22px 12px 18px;
+}
+
+.brand {
+  justify-content: center;
+  padding: 0;
+}
+
+.brand-mark {
+  width: 48px;
+  font-size: 12px;
+}
+
+.brand > span:last-child,
+.sidebar-bottom span:last-child {
+  display: none;
+}
+
+.side-nav {
+  margin-top: 34px;
+  gap: 10px;
+}
+
+.nav-item {
+  height: 48px;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #3976bd;
+  font-weight: 650;
+  text-align: center;
+}
+
+.nav-item:hover {
+  background: #edf5ff;
+  color: var(--blue);
+}
+
+.nav-item.active {
+  background: #fff;
+  border-color: #dce8f5;
+  color: var(--blue);
+  box-shadow: 0 4px 12px rgba(47, 103, 171, 0.1);
+}
+
+.sidebar-bottom {
+  justify-content: center;
+  border-top-color: #bfd8f6;
+  padding: 18px 0 2px;
+}
+
+.main-content {
+  width: min(1400px, calc(100vw - 128px));
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 92px;
+    padding: 20px 8px;
+  }
+
+  .main-content {
+    width: calc(100vw - 92px);
+  }
+
+  .nav-item {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 620px) {
+  .sidebar {
+    width: 100%;
+    padding: 5px 8px;
+    background: #dcecff;
+  }
+
+  .nav-item {
+    font-size: 11px;
+  }
+
+  .nav-item.active {
+    background: #fff;
+  }
+
+  .main-content {
+    width: 100%;
+  }
+}
+
+/* Responsive orientation layout: landscape keeps the left rail; portrait moves it above the content. */
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.sidebar-update {
+  display: none;
+}
+
+@media (orientation: portrait) {
+  .app-shell {
+    display: block;
+    min-width: 0;
+  }
+
+  .sidebar {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    padding: 10px 12px 9px;
+    flex-direction: column;
+    border-right: 0;
+    border-bottom: 1px solid #c5dcf7;
+    z-index: 5;
+  }
+
+  .sidebar-head {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    justify-content: flex-start;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+
+  .brand > span:last-child {
+    display: none;
+  }
+
+  .sidebar-update {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    justify-content: flex-end;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .sidebar-update #update-message {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .side-nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin: 10px 0 0;
+  }
+
+  .nav-item {
+    width: 100%;
+    height: 44px;
+    justify-content: center;
+    padding: 0 4px;
+    border-radius: 7px;
+    font-size: 13px;
+  }
+
+  .sidebar-bottom {
+    display: none;
+  }
+
+  .main-content {
+    width: 100%;
+    padding: 20px clamp(12px, 3vw, 28px) 42px;
+  }
+
+  .topbar {
+    padding-bottom: 18px;
+  }
+
+  .topbar h1 {
+    font-size: 21px;
+  }
+
+  .update-state:not(.sidebar-update) {
+    display: none !important;
+  }
+
+  .page {
+    padding-top: 22px;
+  }
+
+  .page-intro,
+  .detail-title-row {
+    display: block;
+  }
+
+  .intro-stat,
+  .quote-block {
+    margin-top: 14px;
+    text-align: left;
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .backtest-grid,
+  .records-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detail-metrics,
+  .result-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-wrap.combined-chart {
+    height: min(56.25vw, 440px);
+    min-height: 260px;
+  }
+
+  .table-scroll,
+  .holding-table-wrap,
+  .holding-operation-list {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .sidebar {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .nav-item {
+    font-size: 12px;
+  }
+
+  .main-content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
